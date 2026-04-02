@@ -1,6 +1,6 @@
 import { useRef, useMemo } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Sphere, MeshDistortMaterial } from "@react-three/drei";
+import { Canvas, useFrame, extend } from "@react-three/fiber";
+import { OrbitControls, Sphere, MeshDistortMaterial, Line } from "@react-three/drei";
 import * as THREE from "three";
 
 interface BrainMeshProps {
