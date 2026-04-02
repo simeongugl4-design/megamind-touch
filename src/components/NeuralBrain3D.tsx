@@ -90,24 +90,27 @@ const Connections = ({ scanning }: { scanning: boolean }) => {
     });
   });
 
+  const linePoints = useMemo(() => {
+    return connections.map((conn) => {
+      const mid = conn.start.clone().add(conn.end).multiplyScalar(0.5);
+      mid.multiplyScalar(1.3);
+      const curve = new THREE.QuadraticBezierCurve3(conn.start, mid, conn.end);
+      return curve.getPoints(20).map(p => [p.x, p.y, p.z] as [number, number, number]);
+    });
+  }, [connections]);
+
   return (
     <group ref={linesRef}>
-      {connections.map((conn, i) => {
-        const mid = conn.start.clone().add(conn.end).multiplyScalar(0.5);
-        mid.multiplyScalar(1.3);
-        const curve = new THREE.QuadraticBezierCurve3(conn.start, mid, conn.end);
-        const points = curve.getPoints(20);
-        const geometry = new THREE.BufferGeometry().setFromPoints(points);
-        return (
-          <line key={i} geometry={geometry}>
-            <lineBasicMaterial
-              color={i % 2 === 0 ? "#00F0FF" : "#8B5CF6"}
-              transparent
-              opacity={0.1}
-            />
-          </line>
-        );
-      })}
+      {linePoints.map((pts, i) => (
+        <Line
+          key={i}
+          points={pts}
+          color={i % 2 === 0 ? "#00F0FF" : "#8B5CF6"}
+          transparent
+          opacity={scanning ? 0.4 : 0.1}
+          lineWidth={1}
+        />
+      ))}
     </group>
   );
 };
