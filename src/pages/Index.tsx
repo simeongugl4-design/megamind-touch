@@ -68,7 +68,7 @@ const Index = () => {
               </div>
             </div>
             <div className="flex justify-center">
-              <FingerprintScanner onScanningChange={setIsScanning} />
+              <FingerprintScanner onScanningChange={setIsScanning} onScanComplete={() => setScanComplete(true)} />
             </div>
           </div>
         </section>
