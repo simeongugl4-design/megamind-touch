@@ -50,8 +50,6 @@ const Index = () => {
                 Clone Your{" "}
                 <span className="text-primary text-glow-cyan">Brain</span>
                 <br />
-                </span>
-                <br />
                 Through Touch
               </h1>
               <p className="text-muted-foreground max-w-lg leading-relaxed">
