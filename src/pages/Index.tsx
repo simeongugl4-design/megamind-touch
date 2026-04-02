@@ -6,10 +6,12 @@ import NeuralStats from "@/components/NeuralStats";
 import BrainActivityPanel from "@/components/BrainActivityPanel";
 import DataStream from "@/components/DataStream";
 import NeuralBrain3D from "@/components/NeuralBrain3D";
+import BrainAnalysisResults from "@/components/BrainAnalysisResults";
 import { Shield, Zap, Layers } from "lucide-react";
 
 const Index = () => {
   const [isScanning, setIsScanning] = useState(false);
+  const [scanComplete, setScanComplete] = useState(false);
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
