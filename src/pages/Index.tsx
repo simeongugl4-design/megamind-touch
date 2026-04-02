@@ -48,8 +48,8 @@ const Index = () => {
               </div>
               <h1 className="font-orbitron text-4xl lg:text-6xl font-bold leading-tight">
                 Clone Your{" "}
-                <span className="bg-gradient-neural bg-clip-text text-transparent">
-                  Brain
+                <span className="text-primary text-glow-cyan">Brain</span>
+                <br />
                 </span>
                 <br />
                 Through Touch
