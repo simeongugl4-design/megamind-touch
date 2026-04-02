@@ -3,6 +3,8 @@ import { Fingerprint, Brain, Zap } from "lucide-react";
 
 const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningChange?: (scanning: boolean) => void; onScanComplete?: () => void }) => {
   const [scanning, setScanningState] = useState(false);
+  const onScanCompleteRef = useRef(onScanComplete);
+  onScanCompleteRef.current = onScanComplete;
   const setScanning = (v: boolean) => {
     setScanningState(v);
     onScanningChange?.(v);
