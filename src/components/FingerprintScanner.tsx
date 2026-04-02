@@ -20,6 +20,7 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
         if (p >= 100) {
           clearInterval(interval);
           setPhase("complete");
+          onScanComplete?.();
           setTimeout(() => {
             setScanning(false);
             setPhase("idle");
