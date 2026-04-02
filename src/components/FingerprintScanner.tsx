@@ -1,8 +1,12 @@
 import { useState, useEffect } from "react";
 import { Fingerprint, Brain, Zap } from "lucide-react";
 
-const FingerprintScanner = () => {
-  const [scanning, setScanning] = useState(false);
+const FingerprintScanner = ({ onScanningChange }: { onScanningChange?: (scanning: boolean) => void }) => {
+  const [scanning, setScanningState] = useState(false);
+  const setScanning = (v: boolean) => {
+    setScanningState(v);
+    onScanningChange?.(v);
+  };
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState<"idle" | "scanning" | "analyzing" | "complete">("idle");
 

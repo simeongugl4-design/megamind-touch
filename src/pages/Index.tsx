@@ -1,12 +1,16 @@
+import { useState } from "react";
 import megamindLogo from "@/assets/megamind-logo.png";
 import neuralBg from "@/assets/neural-bg.jpg";
 import FingerprintScanner from "@/components/FingerprintScanner";
 import NeuralStats from "@/components/NeuralStats";
 import BrainActivityPanel from "@/components/BrainActivityPanel";
 import DataStream from "@/components/DataStream";
+import NeuralBrain3D from "@/components/NeuralBrain3D";
 import { Shield, Zap, Layers } from "lucide-react";
 
 const Index = () => {
+  const [isScanning, setIsScanning] = useState(false);
+
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Background */}
@@ -64,8 +68,15 @@ const Index = () => {
               </div>
             </div>
             <div className="flex justify-center">
-              <FingerprintScanner />
+              <FingerprintScanner onScanningChange={setIsScanning} />
             </div>
+          </div>
+        </section>
+
+        {/* 3D Neural Brain */}
+        <section className="px-6 lg:px-12 pb-16">
+          <div className="max-w-7xl mx-auto">
+            <NeuralBrain3D scanning={isScanning} />
           </div>
         </section>
 
