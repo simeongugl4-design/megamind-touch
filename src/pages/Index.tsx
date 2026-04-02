@@ -80,6 +80,9 @@ const Index = () => {
           </div>
         </section>
 
+        {/* Brain Analysis Results */}
+        <BrainAnalysisResults visible={scanComplete} />
+
         {/* Stats */}
         <section className="px-6 lg:px-12 pb-16">
           <div className="max-w-7xl mx-auto">
