@@ -6,10 +6,12 @@ import NeuralStats from "@/components/NeuralStats";
 import BrainActivityPanel from "@/components/BrainActivityPanel";
 import DataStream from "@/components/DataStream";
 import NeuralBrain3D from "@/components/NeuralBrain3D";
+import BrainAnalysisResults from "@/components/BrainAnalysisResults";
 import { Shield, Zap, Layers } from "lucide-react";
 
 const Index = () => {
   const [isScanning, setIsScanning] = useState(false);
+  const [scanComplete, setScanComplete] = useState(false);
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -66,7 +68,7 @@ const Index = () => {
               </div>
             </div>
             <div className="flex justify-center">
-              <FingerprintScanner onScanningChange={setIsScanning} />
+              <FingerprintScanner onScanningChange={setIsScanning} onScanComplete={() => setScanComplete(true)} />
             </div>
           </div>
         </section>
@@ -77,6 +79,9 @@ const Index = () => {
             <NeuralBrain3D scanning={isScanning} />
           </div>
         </section>
+
+        {/* Brain Analysis Results */}
+        <BrainAnalysisResults visible={scanComplete} />
 
         {/* Stats */}
         <section className="px-6 lg:px-12 pb-16">
