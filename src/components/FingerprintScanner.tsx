@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Fingerprint, Brain, Zap } from "lucide-react";
 
 const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningChange?: (scanning: boolean) => void; onScanComplete?: () => void }) => {
