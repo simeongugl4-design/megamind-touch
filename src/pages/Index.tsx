@@ -7,6 +7,7 @@ import BrainActivityPanel from "@/components/BrainActivityPanel";
 import DataStream from "@/components/DataStream";
 import NeuralBrain3D from "@/components/NeuralBrain3D";
 import BrainAnalysisResults from "@/components/BrainAnalysisResults";
+import BrainChatbot from "@/components/BrainChatbot";
 import { Shield, Zap, Layers } from "lucide-react";
 
 const Index = () => {
@@ -41,42 +42,68 @@ const Index = () => {
           </div>
         </nav>
 
-        {/* Hero */}
-        <section className="px-6 lg:px-12 py-16 lg:py-24">
-          <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
-            <div className="space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/5 font-mono text-xs text-primary">
-                <Zap className="w-3 h-3" /> NEURAL INTERFACE v4.0
-              </div>
-              <h1 className="font-orbitron text-4xl lg:text-6xl font-bold leading-tight">
-                Clone Your{" "}
-                <span className="text-primary text-glow-cyan">Brain</span>
-                <br />
-                Through Touch
-              </h1>
-              <p className="text-muted-foreground max-w-lg leading-relaxed">
-                MegaMind reads neural patterns through fingerprint contact, mapping synaptic
-                pathways and creating a digital clone of your cognitive architecture.
-              </p>
-              <div className="flex gap-4 pt-4">
-                <button className="px-6 py-3 rounded bg-gradient-neural font-orbitron text-xs font-bold tracking-widest uppercase text-primary-foreground hover:opacity-90 transition-opacity">
-                  Start Scan
-                </button>
-                <button className="px-6 py-3 rounded border border-border font-orbitron text-xs tracking-widest uppercase text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors">
-                  Learn More
-                </button>
-              </div>
+        {/* Hero - Title */}
+        <section className="px-6 lg:px-12 pt-12 pb-6">
+          <div className="max-w-7xl mx-auto text-center space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/5 font-mono text-xs text-primary">
+              <Zap className="w-3 h-3" /> NEURAL INTERFACE v4.0
             </div>
-            <div className="flex justify-center">
-              <FingerprintScanner onScanningChange={setIsScanning} onScanComplete={() => setScanComplete(true)} />
-            </div>
+            <h1 className="font-orbitron text-4xl lg:text-6xl font-bold leading-tight">
+              Clone Your{" "}
+              <span className="text-primary text-glow-cyan">Brain</span>
+              {" "}Through Touch
+            </h1>
+            <p className="text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+              MegaMind reads neural patterns through fingerprint contact, mapping synaptic
+              pathways and creating a digital clone of your cognitive architecture.
+            </p>
           </div>
         </section>
 
-        {/* 3D Neural Brain */}
-        <section className="px-6 lg:px-12 pb-16">
-          <div className="max-w-7xl mx-auto">
-            <NeuralBrain3D scanning={isScanning} />
+        {/* Scanner + 3D Brain Side by Side */}
+        <section className="px-6 lg:px-12 pb-12">
+          <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-6">
+            {/* Scanner Box */}
+            <div className="rounded-xl border border-border bg-card/30 backdrop-blur-sm p-8 flex flex-col items-center justify-center min-h-[450px]">
+              <div className="absolute-ish mb-4">
+                <h3 className="font-orbitron text-sm tracking-widest uppercase text-secondary text-center mb-6">
+                  Neural Fingerprint Scanner
+                </h3>
+              </div>
+              <FingerprintScanner onScanningChange={setIsScanning} onScanComplete={() => setScanComplete(true)} />
+            </div>
+
+            {/* 3D Brain Box */}
+            <div className="min-h-[450px]">
+              <NeuralBrain3D scanning={isScanning} />
+            </div>
+          </div>
+
+          {/* Connection explanation */}
+          <div className="max-w-7xl mx-auto mt-6 p-4 rounded-xl border border-border/50 bg-card/20 backdrop-blur-sm">
+            <div className="grid md:grid-cols-3 gap-4 text-center">
+              <div className="space-y-1">
+                <div className="w-8 h-8 mx-auto rounded-lg bg-primary/10 flex items-center justify-center">
+                  <span className="font-orbitron text-xs font-bold text-primary">01</span>
+                </div>
+                <p className="font-orbitron text-[10px] font-bold text-foreground uppercase tracking-wider">Fingerprint Contact</p>
+                <p className="text-[11px] text-muted-foreground">3,000+ nerve endings per cm² connect directly to your somatosensory cortex</p>
+              </div>
+              <div className="space-y-1">
+                <div className="w-8 h-8 mx-auto rounded-lg bg-secondary/10 flex items-center justify-center">
+                  <span className="font-orbitron text-xs font-bold text-secondary">02</span>
+                </div>
+                <p className="font-orbitron text-[10px] font-bold text-foreground uppercase tracking-wider">Neural Signal Capture</p>
+                <p className="text-[11px] text-muted-foreground">Bioelectric signatures flow through neural terminals at 120 m/s to the 3D mapper</p>
+              </div>
+              <div className="space-y-1">
+                <div className="w-8 h-8 mx-auto rounded-lg bg-pink-500/10 flex items-center justify-center">
+                  <span className="font-orbitron text-xs font-bold text-pink-400">03</span>
+                </div>
+                <p className="font-orbitron text-[10px] font-bold text-foreground uppercase tracking-wider">Real-Time Brain Clone</p>
+                <p className="text-[11px] text-muted-foreground">The 3D neural map builds your digital cognitive twin in real-time as you scan</p>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -128,6 +155,9 @@ const Index = () => {
           </div>
         </footer>
       </div>
+
+      {/* Chatbot */}
+      <BrainChatbot visible={scanComplete} />
     </div>
   );
 };
