@@ -52,11 +52,13 @@ const Index = () => {
             <h1 className="font-orbitron text-4xl lg:text-6xl font-bold leading-tight">
               Clone Your{" "}
               <span className="text-primary text-glow-cyan">Brain</span>
+              {" & "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400">DNA</span>
               {" "}Through Touch
             </h1>
             <p className="text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              MegaMind reads neural patterns through fingerprint contact, mapping synaptic
-              pathways and creating a digital clone of your cognitive architecture.
+              MegaMind reads neural patterns and extracts DNA from epithelial cells through fingerprint contact,
+              mapping your complete cognitive architecture and genomic profile in real-time.
             </p>
           </div>
         </section>
