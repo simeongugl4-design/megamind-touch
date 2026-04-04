@@ -129,7 +129,7 @@ const Index = () => {
             <h2 className="font-orbitron text-2xl font-bold text-center mb-12">
               Advanced <span className="text-primary text-glow-cyan">Capabilities</span>
             </h2>
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
                 { icon: Shield, title: "Secure Mapping", desc: "End-to-end encrypted neural and genomic data with quantum-resistant protocols." },
                 { icon: Zap, title: "Real-time Sync", desc: "Instant synaptic + DNA cloning with sub-millisecond latency." },
