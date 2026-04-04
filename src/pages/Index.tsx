@@ -7,8 +7,9 @@ import BrainActivityPanel from "@/components/BrainActivityPanel";
 import DataStream from "@/components/DataStream";
 import NeuralBrain3D from "@/components/NeuralBrain3D";
 import BrainAnalysisResults from "@/components/BrainAnalysisResults";
+import DNAAnalysisResults from "@/components/DNAAnalysisResults";
 import BrainChatbot from "@/components/BrainChatbot";
-import { Shield, Zap, Layers } from "lucide-react";
+import { Shield, Zap, Layers, Dna } from "lucide-react";
 
 const Index = () => {
   const [isScanning, setIsScanning] = useState(false);
@@ -51,11 +52,13 @@ const Index = () => {
             <h1 className="font-orbitron text-4xl lg:text-6xl font-bold leading-tight">
               Clone Your{" "}
               <span className="text-primary text-glow-cyan">Brain</span>
+              {" & "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400">DNA</span>
               {" "}Through Touch
             </h1>
             <p className="text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              MegaMind reads neural patterns through fingerprint contact, mapping synaptic
-              pathways and creating a digital clone of your cognitive architecture.
+              MegaMind reads neural patterns and extracts DNA from epithelial cells through fingerprint contact,
+              mapping your complete cognitive architecture and genomic profile in real-time.
             </p>
           </div>
         </section>
@@ -82,33 +85,28 @@ const Index = () => {
           {/* Connection explanation */}
           <div className="max-w-7xl mx-auto mt-6 p-4 rounded-xl border border-border/50 bg-card/20 backdrop-blur-sm">
             <div className="grid md:grid-cols-3 gap-4 text-center">
-              <div className="space-y-1">
-                <div className="w-8 h-8 mx-auto rounded-lg bg-primary/10 flex items-center justify-center">
-                  <span className="font-orbitron text-xs font-bold text-primary">01</span>
+              {[
+                { num: "01", title: "Fingerprint Contact", desc: "3,000+ nerve endings per cm² connect to your somatosensory cortex; epithelial cells are nano-collected", color: "text-primary", bg: "bg-primary/10" },
+                { num: "02", title: "Neural + DNA Capture", desc: "Bioelectric signatures map neural pathways at 120 m/s while nanopore sequencers read DNA strands", color: "text-secondary", bg: "bg-secondary/10" },
+                { num: "03", title: "Real-Time Brain & DNA Clone", desc: "3D neural map + full 3.2B base pair genome assembled into your digital biological twin", color: "text-pink-400", bg: "bg-pink-500/10" },
+              ].map(s => (
+                <div key={s.num} className="space-y-1">
+                  <div className={`w-8 h-8 mx-auto rounded-lg ${s.bg} flex items-center justify-center`}>
+                    <span className={`font-orbitron text-xs font-bold ${s.color}`}>{s.num}</span>
+                  </div>
+                  <p className="font-orbitron text-[10px] font-bold text-foreground uppercase tracking-wider">{s.title}</p>
+                  <p className="text-[11px] text-muted-foreground">{s.desc}</p>
                 </div>
-                <p className="font-orbitron text-[10px] font-bold text-foreground uppercase tracking-wider">Fingerprint Contact</p>
-                <p className="text-[11px] text-muted-foreground">3,000+ nerve endings per cm² connect directly to your somatosensory cortex</p>
-              </div>
-              <div className="space-y-1">
-                <div className="w-8 h-8 mx-auto rounded-lg bg-secondary/10 flex items-center justify-center">
-                  <span className="font-orbitron text-xs font-bold text-secondary">02</span>
-                </div>
-                <p className="font-orbitron text-[10px] font-bold text-foreground uppercase tracking-wider">Neural Signal Capture</p>
-                <p className="text-[11px] text-muted-foreground">Bioelectric signatures flow through neural terminals at 120 m/s to the 3D mapper</p>
-              </div>
-              <div className="space-y-1">
-                <div className="w-8 h-8 mx-auto rounded-lg bg-pink-500/10 flex items-center justify-center">
-                  <span className="font-orbitron text-xs font-bold text-pink-400">03</span>
-                </div>
-                <p className="font-orbitron text-[10px] font-bold text-foreground uppercase tracking-wider">Real-Time Brain Clone</p>
-                <p className="text-[11px] text-muted-foreground">The 3D neural map builds your digital cognitive twin in real-time as you scan</p>
-              </div>
+              ))}
             </div>
           </div>
         </section>
 
         {/* Brain Analysis Results */}
         <BrainAnalysisResults visible={scanComplete} />
+
+        {/* DNA Analysis Results */}
+        <DNAAnalysisResults visible={scanComplete} />
 
         {/* Stats */}
         <section className="px-6 lg:px-12 pb-16">
@@ -131,11 +129,12 @@ const Index = () => {
             <h2 className="font-orbitron text-2xl font-bold text-center mb-12">
               Advanced <span className="text-primary text-glow-cyan">Capabilities</span>
             </h2>
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
-                { icon: Shield, title: "Secure Mapping", desc: "End-to-end encrypted neural data with quantum-resistant protocols." },
-                { icon: Zap, title: "Real-time Sync", desc: "Instant synaptic cloning with sub-millisecond latency." },
-                { icon: Layers, title: "Deep Learning", desc: "Multi-layer cognitive architecture replication and enhancement." },
+                { icon: Shield, title: "Secure Mapping", desc: "End-to-end encrypted neural and genomic data with quantum-resistant protocols." },
+                { icon: Zap, title: "Real-time Sync", desc: "Instant synaptic + DNA cloning with sub-millisecond latency." },
+                { icon: Layers, title: "Deep Learning", desc: "Multi-layer cognitive architecture and genomic replication." },
+                { icon: Dna, title: "DNA Profiling", desc: "Full genome sequencing from fingerprint epithelial cells in seconds." },
               ].map((f) => (
                 <div key={f.title} className="p-6 rounded-lg border border-border bg-card/30 backdrop-blur-sm hover:box-glow-cyan transition-all duration-300 group">
                   <f.icon className="w-8 h-8 text-primary mb-4 group-hover:text-secondary transition-colors" />

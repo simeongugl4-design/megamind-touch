@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Fingerprint, Brain, Zap, Sparkles } from "lucide-react";
+import { Fingerprint, Brain, Zap, Sparkles, Dna, HeartPulse } from "lucide-react";
 
 const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningChange?: (scanning: boolean) => void; onScanComplete?: () => void }) => {
   const [scanning, setScanningState] = useState(false);
@@ -10,18 +10,37 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
     onScanningChange?.(v);
   };
   const [progress, setProgress] = useState(0);
-  const [phase, setPhase] = useState<"idle" | "scanning" | "analyzing" | "complete">("idle");
+  const [phase, setPhase] = useState<"idle" | "dermal" | "neural" | "dna" | "cloning" | "complete">("idle");
   const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; delay: number; size: number; color: string }>>([]);
+  const [detectedData, setDetectedData] = useState<string[]>([]);
+
+  const dataPoints = [
+    "Dermal ridge patterns captured...",
+    "Sweat pore mapping complete...",
+    "Nerve ending density: 3,247/cm²",
+    "Bioelectric signature acquired...",
+    "Neural pathway tracing...",
+    "Synaptic firing rate: 200Hz",
+    "Extracting DNA from epithelial cells...",
+    "Chromosome pairs identified: 23",
+    "Mitochondrial DNA sequenced...",
+    "SNP markers: 4.1M detected",
+    "Gene expression profile built...",
+    "Telomere length: 7,800 bp",
+    "Cognitive architecture mapping...",
+    "Brain clone initialization...",
+    "Digital twin synchronized...",
+  ];
 
   useEffect(() => {
     if (scanning) {
-      const p = Array.from({ length: 24 }, (_, i) => ({
+      const p = Array.from({ length: 30 }, (_, i) => ({
         id: i,
-        x: Math.random() * 260,
-        y: Math.random() * 260,
+        x: Math.random() * 280,
+        y: Math.random() * 280,
         delay: Math.random() * 2,
-        size: 2 + Math.random() * 4,
-        color: ["hsl(180,100%,50%)", "hsl(270,80%,65%)", "hsl(300,80%,60%)", "hsl(200,100%,60%)", "hsl(160,100%,45%)"][Math.floor(Math.random() * 5)],
+        size: 2 + Math.random() * 5,
+        color: ["hsl(180,100%,50%)", "hsl(270,80%,65%)", "hsl(300,80%,60%)", "hsl(140,70%,50%)", "hsl(45,100%,55%)"][Math.floor(Math.random() * 5)],
       }));
       setParticles(p);
     } else {
@@ -31,34 +50,64 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
 
   useEffect(() => {
     if (!scanning) return;
-    setPhase("scanning");
+    setPhase("dermal");
     setProgress(0);
+    setDetectedData([]);
+
+    let dataIdx = 0;
+    const dataInterval = setInterval(() => {
+      if (dataIdx < dataPoints.length) {
+        setDetectedData(prev => [...prev.slice(-4), dataPoints[dataIdx]]);
+        dataIdx++;
+      }
+    }, 600);
 
     const interval = setInterval(() => {
       setProgress((p) => {
         if (p >= 100) {
           clearInterval(interval);
+          clearInterval(dataInterval);
           setPhase("complete");
           onScanCompleteRef.current?.();
           setTimeout(() => {
             setScanning(false);
             setPhase("idle");
             setProgress(0);
-          }, 3000);
+            setDetectedData([]);
+          }, 4000);
           return 100;
         }
-        if (p >= 60) setPhase("analyzing");
-        return p + 1.5;
+        if (p >= 80) setPhase("cloning");
+        else if (p >= 50) setPhase("dna");
+        else if (p >= 25) setPhase("neural");
+        return p + 0.8;
       });
-    }, 50);
+    }, 80);
 
-    return () => clearInterval(interval);
+    return () => { clearInterval(interval); clearInterval(dataInterval); };
   }, [scanning]);
 
-  const phaseColor = phase === "analyzing" ? "hsl(270,80%,65%)" : phase === "complete" ? "hsl(120,80%,50%)" : "hsl(180,100%,50%)";
+  const phaseConfig: Record<string, { color: string; label: string; icon: typeof Fingerprint; glow: string }> = {
+    idle: { color: "hsl(180,100%,50%)", label: "Touch to Begin Scan", icon: Fingerprint, glow: "" },
+    dermal: { color: "hsl(180,100%,50%)", label: "Scanning Dermal Patterns...", icon: Fingerprint, glow: "box-glow-cyan" },
+    neural: { color: "hsl(270,80%,65%)", label: "Mapping Neural Pathways...", icon: Brain, glow: "box-glow-purple" },
+    dna: { color: "hsl(140,70%,50%)", label: "Extracting DNA Sequence...", icon: Dna, glow: "" },
+    cloning: { color: "hsl(300,80%,60%)", label: "Cloning Brain & DNA...", icon: HeartPulse, glow: "" },
+    complete: { color: "hsl(120,80%,50%)", label: "Clone Complete", icon: Sparkles, glow: "" },
+  };
+
+  const cfg = phaseConfig[phase] || phaseConfig.idle;
+  const PhaseIcon = cfg.icon;
+
+  const getPhaseGlow = () => {
+    if (phase === "dna") return { boxShadow: "0 0 20px hsl(140,70%,50%,0.4), 0 0 50px hsl(140,70%,50%,0.15)" };
+    if (phase === "cloning") return { boxShadow: "0 0 20px hsl(300,80%,60%,0.4), 0 0 50px hsl(300,80%,60%,0.15)" };
+    if (phase === "complete") return { boxShadow: "0 0 30px hsl(120,80%,50%,0.5), 0 0 60px hsl(120,80%,50%,0.2)" };
+    return {};
+  };
 
   return (
-    <div className="flex flex-col items-center gap-8">
+    <div className="flex flex-col items-center gap-6">
       {/* Scanner Ring */}
       <div className="relative w-72 h-72 flex items-center justify-center">
         {/* Floating particles */}
@@ -67,12 +116,9 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
             key={p.id}
             className="absolute rounded-full animate-float"
             style={{
-              left: p.x,
-              top: p.y,
-              width: p.size,
-              height: p.size,
-              backgroundColor: p.color,
-              opacity: 0.7,
+              left: p.x, top: p.y,
+              width: p.size, height: p.size,
+              backgroundColor: p.color, opacity: 0.7,
               animationDelay: `${p.delay}s`,
               animationDuration: `${1.5 + p.delay}s`,
               filter: `blur(${p.size > 4 ? 1 : 0}px)`,
@@ -80,60 +126,55 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
           />
         ))}
 
-        {/* Outer expanding rings */}
+        {/* Expanding rings */}
         {scanning && (
           <>
-            <div className="absolute inset-0 rounded-full border-2 border-primary/40 animate-ring-expand" />
-            <div className="absolute inset-2 rounded-full border border-secondary/30 animate-ring-expand" style={{ animationDelay: "0.4s" }} />
-            <div className="absolute inset-4 rounded-full border border-pink-500/20 animate-ring-expand" style={{ animationDelay: "0.8s" }} />
+            <div className="absolute inset-0 rounded-full border-2 animate-ring-expand" style={{ borderColor: cfg.color + "66" }} />
+            <div className="absolute inset-2 rounded-full border animate-ring-expand" style={{ borderColor: cfg.color + "44", animationDelay: "0.4s" }} />
+            <div className="absolute inset-4 rounded-full border animate-ring-expand" style={{ borderColor: cfg.color + "22", animationDelay: "0.8s" }} />
           </>
         )}
 
         {/* Orbiting dots */}
-        {scanning && [0, 1, 2].map((i) => (
+        {scanning && [0, 1, 2, 3].map((i) => (
           <div
             key={i}
             className="absolute w-full h-full"
-            style={{ animation: `spin ${3 + i}s linear infinite`, animationDirection: i % 2 === 0 ? "normal" : "reverse" }}
+            style={{ animation: `spin ${2.5 + i * 0.7}s linear infinite`, animationDirection: i % 2 === 0 ? "normal" : "reverse" }}
           >
             <div
-              className="absolute w-2 h-2 rounded-full"
+              className="absolute w-2.5 h-2.5 rounded-full"
               style={{
-                top: 0,
-                left: "50%",
-                transform: "translateX(-50%)",
-                backgroundColor: ["hsl(180,100%,50%)", "hsl(270,80%,65%)", "hsl(300,80%,60%)"][i],
-                boxShadow: `0 0 10px ${["hsl(180,100%,50%)", "hsl(270,80%,65%)", "hsl(300,80%,60%)"][i]}`,
+                top: 0, left: "50%", transform: "translateX(-50%)",
+                backgroundColor: [cfg.color, "hsl(270,80%,65%)", "hsl(300,80%,60%)", "hsl(45,100%,55%)"][i],
+                boxShadow: `0 0 12px ${[cfg.color, "hsl(270,80%,65%)", "hsl(300,80%,60%)", "hsl(45,100%,55%)"][i]}`,
               }}
             />
           </div>
         ))}
 
+        {/* DNA Helix Ring (during DNA phase) */}
+        {(phase === "dna" || phase === "cloning") && (
+          <div className="absolute inset-[-8px] rounded-full border-2 border-dashed animate-spin-slow" style={{ borderColor: "hsl(140,70%,50%,0.5)", animationDuration: "8s" }} />
+        )}
+
         {/* Main circle */}
         <div
           className={`relative w-52 h-52 rounded-full border-2 flex items-center justify-center cursor-pointer transition-all duration-500 ${
-            scanning
-              ? phase === "analyzing"
-                ? "border-secondary box-glow-purple"
-                : phase === "complete"
-                ? "border-green-400"
-                : "border-primary box-glow-cyan"
-              : "border-muted hover:border-primary/50 hover:shadow-[0_0_30px_hsl(180,100%,50%,0.15)]"
+            !scanning ? "border-muted hover:border-primary/50 hover:shadow-[0_0_30px_hsl(180,100%,50%,0.15)]" : cfg.glow
           }`}
           onClick={() => !scanning && setScanning(true)}
-          style={phase === "complete" ? { boxShadow: "0 0 30px hsl(120,80%,50%,0.4), 0 0 60px hsl(120,80%,50%,0.2)" } : {}}
+          style={{
+            ...(scanning && !cfg.glow ? getPhaseGlow() : {}),
+            ...(phase === "complete" ? getPhaseGlow() : {}),
+            borderColor: scanning ? cfg.color : undefined,
+          }}
         >
-          {/* Inner glow gradient */}
+          {/* Inner glow */}
           {scanning && (
             <div
               className="absolute inset-0 rounded-full opacity-20"
-              style={{
-                background: phase === "analyzing"
-                  ? "radial-gradient(circle, hsl(270,80%,65%), transparent 70%)"
-                  : phase === "complete"
-                  ? "radial-gradient(circle, hsl(120,80%,50%), transparent 70%)"
-                  : "radial-gradient(circle, hsl(180,100%,50%), transparent 70%)",
-              }}
+              style={{ background: `radial-gradient(circle, ${cfg.color}, transparent 70%)` }}
             />
           )}
 
@@ -143,9 +184,7 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
               <div
                 className="w-full h-1.5 animate-scan-line"
                 style={{
-                  background: phase === "analyzing"
-                    ? "linear-gradient(to right, transparent, hsl(270,80%,65%), hsl(300,80%,60%), transparent)"
-                    : "linear-gradient(to right, transparent, hsl(180,100%,50%), hsl(200,100%,60%), transparent)",
+                  background: `linear-gradient(to right, transparent, ${cfg.color}, transparent)`,
                 }}
               />
             </div>
@@ -153,71 +192,72 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
 
           {/* Icon */}
           <div className={`transition-all duration-500 ${scanning ? "animate-pulse-glow" : ""}`}>
-            {phase === "complete" ? (
-              <Sparkles className="w-16 h-16 text-green-400" />
-            ) : phase === "analyzing" ? (
-              <Brain className="w-16 h-16 text-secondary" />
-            ) : (
-              <Fingerprint className="w-16 h-16 text-primary" />
-            )}
+            <PhaseIcon className="w-16 h-16" style={{ color: cfg.color }} />
           </div>
 
-          {/* Progress arc (SVG) */}
+          {/* Progress arc */}
           <svg className="absolute inset-0 -rotate-90" viewBox="0 0 208 208">
             <circle cx="104" cy="104" r="98" fill="none" stroke="hsl(220,40%,18%)" strokeWidth="2" />
             <circle
               cx="104" cy="104" r="98"
               fill="none"
-              stroke="url(#scanGradient)"
+              stroke={cfg.color}
               strokeWidth="4"
               strokeLinecap="round"
               strokeDasharray={`${2 * Math.PI * 98}`}
               strokeDashoffset={`${2 * Math.PI * 98 * (1 - progress / 100)}`}
               className="transition-all duration-100"
-              style={{ filter: "drop-shadow(0 0 6px " + phaseColor + ")" }}
+              style={{ filter: `drop-shadow(0 0 6px ${cfg.color})` }}
             />
-            <defs>
-              <linearGradient id="scanGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor={phase === "complete" ? "hsl(120,80%,50%)" : "hsl(180,100%,50%)"} />
-                <stop offset="50%" stopColor={phase === "analyzing" ? "hsl(300,80%,60%)" : "hsl(270,80%,65%)"} />
-                <stop offset="100%" stopColor={phase === "complete" ? "hsl(160,100%,45%)" : "hsl(270,80%,65%)"} />
-              </linearGradient>
-            </defs>
           </svg>
         </div>
       </div>
 
       {/* Status */}
-      <div className="text-center space-y-2">
-        <p className="font-orbitron text-sm tracking-widest uppercase">
-          {phase === "idle" && <span className="text-muted-foreground">Touch to Scan</span>}
-          {phase === "scanning" && <span className="text-primary text-glow-cyan">Reading Neural Fingerprint...</span>}
-          {phase === "analyzing" && <span className="text-secondary text-glow-purple">Cloning Brain Patterns...</span>}
-          {phase === "complete" && (
-            <span className="text-green-400 flex items-center justify-center gap-2" style={{ textShadow: "0 0 10px hsl(120,80%,50%,0.8)" }}>
-              <Zap className="w-4 h-4" /> Neural Clone Complete
-            </span>
-          )}
+      <div className="text-center space-y-2 min-h-[80px]">
+        <p className="font-orbitron text-sm tracking-widest uppercase" style={{ color: cfg.color, textShadow: scanning ? `0 0 10px ${cfg.color}80` : "none" }}>
+          {phase === "complete" && <Zap className="w-4 h-4 inline mr-1" />}
+          {cfg.label}
         </p>
         {scanning && (
           <div className="space-y-1">
             <p className="font-mono text-xs text-muted-foreground">
-              {Math.floor(progress)}% — {phase === "complete" ? "Clone ready" : phase === "analyzing" ? "Synaptic mapping" : "Dermal analysis"}
+              {Math.floor(progress)}% — {phase === "dermal" ? "Dermal analysis" : phase === "neural" ? "Neural mapping" : phase === "dna" ? "DNA extraction" : phase === "cloning" ? "Cloning" : "Complete"}
             </p>
+            {/* Phase indicators */}
+            <div className="flex items-center justify-center gap-1 mt-2">
+              {["dermal", "neural", "dna", "cloning", "complete"].map((p, i) => {
+                const phases = ["dermal", "neural", "dna", "cloning", "complete"];
+                const currentIdx = phases.indexOf(phase);
+                const isActive = i <= currentIdx;
+                return (
+                  <div key={p} className="flex items-center gap-1">
+                    <div className={`w-2 h-2 rounded-full transition-all duration-300 ${isActive ? "scale-100" : "scale-75 opacity-40"}`}
+                      style={{ backgroundColor: isActive ? cfg.color : "hsl(220,40%,18%)" }}
+                    />
+                    {i < 4 && <div className="w-4 h-px" style={{ backgroundColor: isActive ? cfg.color + "60" : "hsl(220,40%,18%)" }} />}
+                  </div>
+                );
+              })}
+            </div>
             {/* Mini progress bar */}
-            <div className="w-48 h-1 mx-auto bg-muted rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-100"
-                style={{
-                  width: `${progress}%`,
-                  background: phase === "analyzing"
-                    ? "linear-gradient(90deg, hsl(270,80%,65%), hsl(300,80%,60%))"
-                    : phase === "complete"
-                    ? "linear-gradient(90deg, hsl(120,80%,50%), hsl(160,100%,45%))"
-                    : "linear-gradient(90deg, hsl(180,100%,50%), hsl(200,100%,60%))",
-                }}
+            <div className="w-48 h-1 mx-auto bg-muted rounded-full overflow-hidden mt-2">
+              <div className="h-full rounded-full transition-all duration-100"
+                style={{ width: `${progress}%`, background: `linear-gradient(90deg, ${cfg.color}, ${cfg.color}88)` }}
               />
             </div>
+          </div>
+        )}
+
+        {/* Live data feed */}
+        {scanning && detectedData.length > 0 && (
+          <div className="mt-3 space-y-1 max-w-[260px] mx-auto">
+            {detectedData.slice(-3).map((d, i) => (
+              <p key={i} className="font-mono text-[10px] text-muted-foreground animate-fade-in truncate"
+                style={{ opacity: i === detectedData.slice(-3).length - 1 ? 1 : 0.5 }}>
+                {'>'} {d}
+              </p>
+            ))}
           </div>
         )}
       </div>

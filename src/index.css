@@ -101,6 +101,14 @@
 .animate-fingerprint-scan { animation: fingerprint-scan 4s ease-in-out infinite; }
 .animate-ring-expand { animation: ring-expand 2s ease-out infinite; }
 
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in { animation: fade-in 0.3s ease-out; }
+.animate-spin-slow { animation: spin 8s linear infinite; }
+
 .text-glow-cyan {
   text-shadow: 0 0 10px hsl(180 100% 50% / 0.8), 0 0 30px hsl(180 100% 50% / 0.4);
 }

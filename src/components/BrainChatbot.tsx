@@ -136,7 +136,7 @@ const BrainChatbot = ({ visible }: { visible: boolean }) => {
             </div>
             <div className="flex-1">
               <p className="font-orbitron text-xs font-bold text-foreground">MegaMind AI</p>
-              <p className="font-mono text-[10px] text-muted-foreground">Neural Clone Assistant</p>
+              <p className="font-mono text-[10px] text-muted-foreground">Neural & DNA Clone Assistant</p>
             </div>
             <button onClick={() => setOpen(false)} className="p-1 hover:bg-muted rounded">
               <X className="w-4 h-4 text-muted-foreground" />
@@ -148,16 +148,17 @@ const BrainChatbot = ({ visible }: { visible: boolean }) => {
             {messages.length === 0 && (
               <div className="text-center py-8 space-y-3">
                 <Sparkles className="w-8 h-8 text-primary mx-auto" />
-                <p className="font-orbitron text-xs font-bold text-foreground">Your Brain Has Been Cloned</p>
+                <p className="font-orbitron text-xs font-bold text-foreground">Your Brain & DNA Have Been Cloned</p>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Ask me anything about your neural architecture, cognitive abilities, memory patterns, or brain health.
+                  Ask me anything about your neural architecture, cognitive abilities, DNA profile, genetic traits, health risks, or ancestry.
                 </p>
                 <div className="space-y-2 pt-2">
                   {[
                     "What are my cognitive strengths?",
-                    "How does my memory work?",
-                    "Explain my brain activity",
-                    "What can I improve?",
+                    "Explain my DNA ancestry composition",
+                    "What genetic health risks do I have?",
+                    "How do my genes affect my brain?",
+                    "What traits did my DNA reveal?",
                   ].map((q) => (
                     <button
                       key={q}
@@ -207,7 +208,7 @@ const BrainChatbot = ({ visible }: { visible: boolean }) => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && send()}
-                placeholder="Ask about your brain..."
+                placeholder="Ask about your brain or DNA..."
                 className="flex-1 bg-muted/50 border border-border rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
               />
               <button
