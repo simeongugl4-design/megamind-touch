@@ -6,8 +6,10 @@ import NeuralStats from "@/components/NeuralStats";
 import BrainActivityPanel from "@/components/BrainActivityPanel";
 import DataStream from "@/components/DataStream";
 import NeuralBrain3D from "@/components/NeuralBrain3D";
+import DNAHelix3D from "@/components/DNAHelix3D";
 import BrainAnalysisResults from "@/components/BrainAnalysisResults";
 import DNAAnalysisResults from "@/components/DNAAnalysisResults";
+import ReportExport from "@/components/ReportExport";
 import BrainChatbot from "@/components/BrainChatbot";
 import { Shield, Zap, Layers, Dna } from "lucide-react";
 
@@ -63,22 +65,25 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Scanner + 3D Brain Side by Side */}
+        {/* Scanner + 3D Brain + 3D DNA */}
         <section className="px-6 lg:px-12 pb-12">
-          <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-6">
+          <div className="max-w-7xl mx-auto grid lg:grid-cols-3 gap-6">
             {/* Scanner Box */}
             <div className="rounded-xl border border-border bg-card/30 backdrop-blur-sm p-8 flex flex-col items-center justify-center min-h-[450px]">
-              <div className="absolute-ish mb-4">
-                <h3 className="font-orbitron text-sm tracking-widest uppercase text-secondary text-center mb-6">
-                  Neural Fingerprint Scanner
-                </h3>
-              </div>
+              <h3 className="font-orbitron text-sm tracking-widest uppercase text-secondary text-center mb-6">
+                Neural Fingerprint Scanner
+              </h3>
               <FingerprintScanner onScanningChange={setIsScanning} onScanComplete={() => setScanComplete(true)} />
             </div>
 
             {/* 3D Brain Box */}
             <div className="min-h-[450px]">
               <NeuralBrain3D scanning={isScanning} />
+            </div>
+
+            {/* 3D DNA Helix Box */}
+            <div className="min-h-[450px]">
+              <DNAHelix3D scanning={isScanning} />
             </div>
           </div>
 
@@ -107,6 +112,9 @@ const Index = () => {
 
         {/* DNA Analysis Results */}
         <DNAAnalysisResults visible={scanComplete} />
+
+        {/* Report Export */}
+        <ReportExport visible={scanComplete} />
 
         {/* Stats */}
         <section className="px-6 lg:px-12 pb-16">
