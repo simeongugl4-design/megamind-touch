@@ -7,8 +7,9 @@ import BrainActivityPanel from "@/components/BrainActivityPanel";
 import DataStream from "@/components/DataStream";
 import NeuralBrain3D from "@/components/NeuralBrain3D";
 import BrainAnalysisResults from "@/components/BrainAnalysisResults";
+import DNAAnalysisResults from "@/components/DNAAnalysisResults";
 import BrainChatbot from "@/components/BrainChatbot";
-import { Shield, Zap, Layers } from "lucide-react";
+import { Shield, Zap, Layers, Dna } from "lucide-react";
 
 const Index = () => {
   const [isScanning, setIsScanning] = useState(false);
