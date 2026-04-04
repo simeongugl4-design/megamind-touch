@@ -208,7 +208,7 @@ const BrainChatbot = ({ visible }: { visible: boolean }) => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && send()}
-                placeholder="Ask about your brain..."
+                placeholder="Ask about your brain or DNA..."
                 className="flex-1 bg-muted/50 border border-border rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
               />
               <button
