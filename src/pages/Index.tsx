@@ -113,6 +113,9 @@ const Index = () => {
         {/* Brain Analysis Results */}
         <BrainAnalysisResults visible={scanComplete} />
 
+        {/* DNA Analysis Results */}
+        <DNAAnalysisResults visible={scanComplete} />
+
         {/* Stats */}
         <section className="px-6 lg:px-12 pb-16">
           <div className="max-w-7xl mx-auto">
