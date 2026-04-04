@@ -136,7 +136,7 @@ const BrainChatbot = ({ visible }: { visible: boolean }) => {
             </div>
             <div className="flex-1">
               <p className="font-orbitron text-xs font-bold text-foreground">MegaMind AI</p>
-              <p className="font-mono text-[10px] text-muted-foreground">Neural Clone Assistant</p>
+              <p className="font-mono text-[10px] text-muted-foreground">Neural & DNA Clone Assistant</p>
             </div>
             <button onClick={() => setOpen(false)} className="p-1 hover:bg-muted rounded">
               <X className="w-4 h-4 text-muted-foreground" />
