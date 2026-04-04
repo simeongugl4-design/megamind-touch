@@ -131,9 +131,10 @@ const Index = () => {
             </h2>
             <div className="grid md:grid-cols-3 gap-6">
               {[
-                { icon: Shield, title: "Secure Mapping", desc: "End-to-end encrypted neural data with quantum-resistant protocols." },
-                { icon: Zap, title: "Real-time Sync", desc: "Instant synaptic cloning with sub-millisecond latency." },
-                { icon: Layers, title: "Deep Learning", desc: "Multi-layer cognitive architecture replication and enhancement." },
+                { icon: Shield, title: "Secure Mapping", desc: "End-to-end encrypted neural and genomic data with quantum-resistant protocols." },
+                { icon: Zap, title: "Real-time Sync", desc: "Instant synaptic + DNA cloning with sub-millisecond latency." },
+                { icon: Layers, title: "Deep Learning", desc: "Multi-layer cognitive architecture and genomic replication." },
+                { icon: Dna, title: "DNA Profiling", desc: "Full genome sequencing from fingerprint epithelial cells in seconds." },
               ].map((f) => (
                 <div key={f.title} className="p-6 rounded-lg border border-border bg-card/30 backdrop-blur-sm hover:box-glow-cyan transition-all duration-300 group">
                   <f.icon className="w-8 h-8 text-primary mb-4 group-hover:text-secondary transition-colors" />
