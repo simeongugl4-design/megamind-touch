@@ -96,7 +96,8 @@ function generateHTMLReport() {
   .subtitle { text-align: center; color: #8B5CF6; font-size: 12px; letter-spacing: 2px; margin-bottom: 30px; }
   .meta { text-align: center; color: #667; font-size: 11px; margin-bottom: 40px; }
   h2 { font-size: 16px; color: #00F0FF; border-bottom: 1px solid #1a2744; padding-bottom: 8px; margin: 30px 0 16px; letter-spacing: 2px; text-transform: uppercase; }
-  h2.dna { color: #00FF88; }
+   h2.dna { color: #00FF88; }
+   h2.heart { color: #FF1744; }
   table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
   th { background: #111827; color: #00F0FF; padding: 10px 12px; text-align: left; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
   td { padding: 8px 12px; border-bottom: 1px solid #1a2744; font-size: 13px; }
