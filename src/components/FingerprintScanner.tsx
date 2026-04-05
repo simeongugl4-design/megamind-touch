@@ -110,6 +110,7 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
 
   const getPhaseGlow = () => {
     if (phase === "dna") return { boxShadow: "0 0 20px hsl(140,70%,50%,0.4), 0 0 50px hsl(140,70%,50%,0.15)" };
+    if (phase === "cardiac") return { boxShadow: "0 0 20px hsl(0,80%,55%,0.4), 0 0 50px hsl(0,80%,55%,0.15)" };
     if (phase === "cloning") return { boxShadow: "0 0 20px hsl(300,80%,60%,0.4), 0 0 50px hsl(300,80%,60%,0.15)" };
     if (phase === "complete") return { boxShadow: "0 0 30px hsl(120,80%,50%,0.5), 0 0 60px hsl(120,80%,50%,0.2)" };
     return {};
