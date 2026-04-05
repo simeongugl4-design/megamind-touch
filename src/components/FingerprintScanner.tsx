@@ -164,8 +164,8 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
         ))}
 
         {/* DNA Helix Ring (during DNA phase) */}
-        {(phase === "dna" || phase === "cloning") && (
-          <div className="absolute inset-[-8px] rounded-full border-2 border-dashed animate-spin-slow" style={{ borderColor: "hsl(140,70%,50%,0.5)", animationDuration: "8s" }} />
+        {(phase === "dna" || phase === "cardiac" || phase === "cloning") && (
+          <div className="absolute inset-[-8px] rounded-full border-2 border-dashed animate-spin-slow" style={{ borderColor: phase === "cardiac" ? "hsl(0,80%,55%,0.5)" : "hsl(140,70%,50%,0.5)", animationDuration: "8s" }} />
         )}
 
         {/* Main circle */}
