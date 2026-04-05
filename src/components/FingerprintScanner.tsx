@@ -245,7 +245,7 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
                     <div className={`w-2 h-2 rounded-full transition-all duration-300 ${isActive ? "scale-100" : "scale-75 opacity-40"}`}
                       style={{ backgroundColor: isActive ? cfg.color : "hsl(220,40%,18%)" }}
                     />
-                    {i < 4 && <div className="w-4 h-px" style={{ backgroundColor: isActive ? cfg.color + "60" : "hsl(220,40%,18%)" }} />}
+                    {i < 5 && <div className="w-3 h-px" style={{ backgroundColor: isActive ? cfg.color + "60" : "hsl(220,40%,18%)" }} />}
                   </div>
                 );
               })}
