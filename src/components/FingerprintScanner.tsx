@@ -232,12 +232,12 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
         {scanning && (
           <div className="space-y-1">
             <p className="font-mono text-xs text-muted-foreground">
-              {Math.floor(progress)}% — {phase === "dermal" ? "Dermal analysis" : phase === "neural" ? "Neural mapping" : phase === "dna" ? "DNA extraction" : phase === "cloning" ? "Cloning" : "Complete"}
+              {Math.floor(progress)}% — {phase === "dermal" ? "Dermal analysis" : phase === "neural" ? "Neural mapping" : phase === "dna" ? "DNA extraction" : phase === "cardiac" ? "Cardiac cloning" : phase === "cloning" ? "Finalizing" : "Complete"}
             </p>
             {/* Phase indicators */}
             <div className="flex items-center justify-center gap-1 mt-2">
-              {["dermal", "neural", "dna", "cloning", "complete"].map((p, i) => {
-                const phases = ["dermal", "neural", "dna", "cloning", "complete"];
+              {["dermal", "neural", "dna", "cardiac", "cloning", "complete"].map((p, i) => {
+                const phases = ["dermal", "neural", "dna", "cardiac", "cloning", "complete"];
                 const currentIdx = phases.indexOf(phase);
                 const isActive = i <= currentIdx;
                 return (
