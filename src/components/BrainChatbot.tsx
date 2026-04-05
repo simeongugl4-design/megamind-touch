@@ -150,15 +150,15 @@ const BrainChatbot = ({ visible }: { visible: boolean }) => {
                 <Sparkles className="w-8 h-8 text-primary mx-auto" />
                 <p className="font-orbitron text-xs font-bold text-foreground">Your Brain & DNA Have Been Cloned</p>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Ask me anything about your neural architecture, cognitive abilities, DNA profile, genetic traits, health risks, or ancestry.
+                  Ask me anything about your neural architecture, cognitive abilities, DNA profile, genetic traits, heart health, or ancestry.
                 </p>
                 <div className="space-y-2 pt-2">
                   {[
                     "What are my cognitive strengths?",
                     "Explain my DNA ancestry composition",
-                    "What genetic health risks do I have?",
-                    "How do my genes affect my brain?",
-                    "What traits did my DNA reveal?",
+                    "How healthy is my heart?",
+                    "How do my genes affect my brain and heart?",
+                    "What's my overall biological profile?",
                   ].map((q) => (
                     <button
                       key={q}
@@ -208,7 +208,7 @@ const BrainChatbot = ({ visible }: { visible: boolean }) => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && send()}
-                placeholder="Ask about your brain or DNA..."
+                placeholder="Ask about your brain, DNA, or heart..."
                 className="flex-1 bg-muted/50 border border-border rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
               />
               <button

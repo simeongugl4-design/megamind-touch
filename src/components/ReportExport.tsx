@@ -47,6 +47,29 @@ const ancestry = [
   { region: "Sub-Saharan African", pct: "3%" },
 ];
 
+const cardiacData = [
+  { metric: "Resting Heart Rate", value: "72 BPM" },
+  { metric: "Ejection Fraction", value: "62%" },
+  { metric: "Blood Pressure", value: "120/80 mmHg" },
+  { metric: "Cardiac Output", value: "5.2 L/min" },
+  { metric: "Stroke Volume", value: "72 mL" },
+  { metric: "VO₂ Max", value: "42 mL/kg/min" },
+];
+
+const valveData = [
+  { name: "Mitral Valve", status: "Normal", regurgitation: "None" },
+  { name: "Aortic Valve", status: "Normal", regurgitation: "None" },
+  { name: "Tricuspid Valve", status: "Normal", regurgitation: "Trace" },
+  { name: "Pulmonary Valve", status: "Normal", regurgitation: "None" },
+];
+
+const coronaryData = [
+  { artery: "Left Anterior Descending", blockage: "0%" },
+  { artery: "Right Coronary Artery", blockage: "2%" },
+  { artery: "Left Circumflex", blockage: "0%" },
+  { artery: "Left Main Coronary", blockage: "0%" },
+];
+
 const skills = [
   { name: "Language", level: "87%" },
   { name: "Logic & Math", level: "92%" },
@@ -73,7 +96,8 @@ function generateHTMLReport() {
   .subtitle { text-align: center; color: #8B5CF6; font-size: 12px; letter-spacing: 2px; margin-bottom: 30px; }
   .meta { text-align: center; color: #667; font-size: 11px; margin-bottom: 40px; }
   h2 { font-size: 16px; color: #00F0FF; border-bottom: 1px solid #1a2744; padding-bottom: 8px; margin: 30px 0 16px; letter-spacing: 2px; text-transform: uppercase; }
-  h2.dna { color: #00FF88; }
+   h2.dna { color: #00FF88; }
+   h2.heart { color: #FF1744; }
   table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
   th { background: #111827; color: #00F0FF; padding: 10px 12px; text-align: left; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
   td { padding: 8px 12px; border-bottom: 1px solid #1a2744; font-size: 13px; }
@@ -90,7 +114,7 @@ function generateHTMLReport() {
 <body>
 <div class="page">
   <h1>⚡ MEGAMIND</h1>
-  <div class="subtitle">NEURAL & GENOMIC ANALYSIS REPORT</div>
+  <div class="subtitle">NEURAL, GENOMIC & CARDIAC ANALYSIS REPORT</div>
   <div class="meta">Generated: ${now.toLocaleString()} | Report ID: MM-${Date.now().toString(36).toUpperCase()} | Accuracy: 99.97%</div>
 
   <h2>🧠 Cognitive Metrics</h2>
@@ -124,6 +148,21 @@ function generateHTMLReport() {
     const cls = h.risk.includes("Below") ? "low" : h.risk === "Average" ? "normal" : "mild";
     return `<tr><td>${h.condition}</td><td><span class="badge ${cls}">${h.risk}</span></td><td>${h.gene}</td></tr>`;
   }).join("")}
+  </table>
+
+  <h2 class="heart">❤️ Cardiac Metrics</h2>
+  <table><tr><th>Metric</th><th>Value</th></tr>
+  ${cardiacData.map(c => `<tr><td>${c.metric}</td><td><strong>${c.value}</strong></td></tr>`).join("")}
+  </table>
+
+  <h2 class="heart">❤️ Valve Health</h2>
+  <table><tr><th>Valve</th><th>Status</th><th>Regurgitation</th></tr>
+  ${valveData.map(v => `<tr><td>${v.name}</td><td><span class="badge low">${v.status}</span></td><td>${v.regurgitation}</td></tr>`).join("")}
+  </table>
+
+  <h2 class="heart">❤️ Coronary Arteries</h2>
+  <table><tr><th>Artery</th><th>Blockage</th></tr>
+  ${coronaryData.map(c => `<tr><td>${c.artery}</td><td><span class="badge low">${c.blockage}</span></td></tr>`).join("")}
   </table>
 
   <div class="disclaimer">

@@ -10,7 +10,7 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
     onScanningChange?.(v);
   };
   const [progress, setProgress] = useState(0);
-  const [phase, setPhase] = useState<"idle" | "dermal" | "neural" | "dna" | "cloning" | "complete">("idle");
+  const [phase, setPhase] = useState<"idle" | "dermal" | "neural" | "dna" | "cardiac" | "cloning" | "complete">("idle");
   const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; delay: number; size: number; color: string }>>([]);
   const [detectedData, setDetectedData] = useState<string[]>([]);
 
@@ -25,9 +25,16 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
     "Chromosome pairs identified: 23",
     "Mitochondrial DNA sequenced...",
     "SNP markers: 4.1M detected",
+    "Pulse wave analysis initiated...",
+    "Heart rate detected: 72 BPM",
+    "Ejection fraction: 62%",
+    "Coronary arteries mapped...",
+    "Cardiac digital twin synced...",
     "Gene expression profile built...",
     "Telomere length: 7,800 bp",
     "Cognitive architecture mapping...",
+    "Brain clone initialization...",
+    "Digital twin synchronized...",
     "Brain clone initialization...",
     "Digital twin synchronized...",
   ];
@@ -77,10 +84,11 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
           }, 4000);
           return 100;
         }
-        if (p >= 80) setPhase("cloning");
-        else if (p >= 50) setPhase("dna");
-        else if (p >= 25) setPhase("neural");
-        return p + 0.8;
+        if (p >= 85) setPhase("cloning");
+        else if (p >= 65) setPhase("cardiac");
+        else if (p >= 40) setPhase("dna");
+        else if (p >= 20) setPhase("neural");
+        return p + 0.6;
       });
     }, 80);
 
@@ -92,7 +100,8 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
     dermal: { color: "hsl(180,100%,50%)", label: "Scanning Dermal Patterns...", icon: Fingerprint, glow: "box-glow-cyan" },
     neural: { color: "hsl(270,80%,65%)", label: "Mapping Neural Pathways...", icon: Brain, glow: "box-glow-purple" },
     dna: { color: "hsl(140,70%,50%)", label: "Extracting DNA Sequence...", icon: Dna, glow: "" },
-    cloning: { color: "hsl(300,80%,60%)", label: "Cloning Brain & DNA...", icon: HeartPulse, glow: "" },
+    cardiac: { color: "hsl(0,80%,55%)", label: "Cloning Cardiac Structure...", icon: HeartPulse, glow: "" },
+    cloning: { color: "hsl(300,80%,60%)", label: "Finalizing Biological Clone...", icon: Sparkles, glow: "" },
     complete: { color: "hsl(120,80%,50%)", label: "Clone Complete", icon: Sparkles, glow: "" },
   };
 
@@ -101,6 +110,7 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
 
   const getPhaseGlow = () => {
     if (phase === "dna") return { boxShadow: "0 0 20px hsl(140,70%,50%,0.4), 0 0 50px hsl(140,70%,50%,0.15)" };
+    if (phase === "cardiac") return { boxShadow: "0 0 20px hsl(0,80%,55%,0.4), 0 0 50px hsl(0,80%,55%,0.15)" };
     if (phase === "cloning") return { boxShadow: "0 0 20px hsl(300,80%,60%,0.4), 0 0 50px hsl(300,80%,60%,0.15)" };
     if (phase === "complete") return { boxShadow: "0 0 30px hsl(120,80%,50%,0.5), 0 0 60px hsl(120,80%,50%,0.2)" };
     return {};
@@ -154,8 +164,8 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
         ))}
 
         {/* DNA Helix Ring (during DNA phase) */}
-        {(phase === "dna" || phase === "cloning") && (
-          <div className="absolute inset-[-8px] rounded-full border-2 border-dashed animate-spin-slow" style={{ borderColor: "hsl(140,70%,50%,0.5)", animationDuration: "8s" }} />
+        {(phase === "dna" || phase === "cardiac" || phase === "cloning") && (
+          <div className="absolute inset-[-8px] rounded-full border-2 border-dashed animate-spin-slow" style={{ borderColor: phase === "cardiac" ? "hsl(0,80%,55%,0.5)" : "hsl(140,70%,50%,0.5)", animationDuration: "8s" }} />
         )}
 
         {/* Main circle */}
@@ -222,12 +232,12 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
         {scanning && (
           <div className="space-y-1">
             <p className="font-mono text-xs text-muted-foreground">
-              {Math.floor(progress)}% — {phase === "dermal" ? "Dermal analysis" : phase === "neural" ? "Neural mapping" : phase === "dna" ? "DNA extraction" : phase === "cloning" ? "Cloning" : "Complete"}
+              {Math.floor(progress)}% — {phase === "dermal" ? "Dermal analysis" : phase === "neural" ? "Neural mapping" : phase === "dna" ? "DNA extraction" : phase === "cardiac" ? "Cardiac cloning" : phase === "cloning" ? "Finalizing" : "Complete"}
             </p>
             {/* Phase indicators */}
             <div className="flex items-center justify-center gap-1 mt-2">
-              {["dermal", "neural", "dna", "cloning", "complete"].map((p, i) => {
-                const phases = ["dermal", "neural", "dna", "cloning", "complete"];
+              {["dermal", "neural", "dna", "cardiac", "cloning", "complete"].map((p, i) => {
+                const phases = ["dermal", "neural", "dna", "cardiac", "cloning", "complete"];
                 const currentIdx = phases.indexOf(phase);
                 const isActive = i <= currentIdx;
                 return (
@@ -235,7 +245,7 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
                     <div className={`w-2 h-2 rounded-full transition-all duration-300 ${isActive ? "scale-100" : "scale-75 opacity-40"}`}
                       style={{ backgroundColor: isActive ? cfg.color : "hsl(220,40%,18%)" }}
                     />
-                    {i < 4 && <div className="w-4 h-px" style={{ backgroundColor: isActive ? cfg.color + "60" : "hsl(220,40%,18%)" }} />}
+                    {i < 5 && <div className="w-3 h-px" style={{ backgroundColor: isActive ? cfg.color + "60" : "hsl(220,40%,18%)" }} />}
                   </div>
                 );
               })}
