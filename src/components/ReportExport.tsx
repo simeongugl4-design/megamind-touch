@@ -113,7 +113,7 @@ function generateHTMLReport() {
 <body>
 <div class="page">
   <h1>⚡ MEGAMIND</h1>
-  <div class="subtitle">NEURAL & GENOMIC ANALYSIS REPORT</div>
+  <div class="subtitle">NEURAL, GENOMIC & CARDIAC ANALYSIS REPORT</div>
   <div class="meta">Generated: ${now.toLocaleString()} | Report ID: MM-${Date.now().toString(36).toUpperCase()} | Accuracy: 99.97%</div>
 
   <h2>🧠 Cognitive Metrics</h2>
