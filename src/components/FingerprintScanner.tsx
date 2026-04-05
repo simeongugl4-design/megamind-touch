@@ -84,10 +84,11 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
           }, 4000);
           return 100;
         }
-        if (p >= 80) setPhase("cloning");
-        else if (p >= 50) setPhase("dna");
-        else if (p >= 25) setPhase("neural");
-        return p + 0.8;
+        if (p >= 85) setPhase("cloning");
+        else if (p >= 65) setPhase("cardiac");
+        else if (p >= 40) setPhase("dna");
+        else if (p >= 20) setPhase("neural");
+        return p + 0.6;
       });
     }, 80);
 
