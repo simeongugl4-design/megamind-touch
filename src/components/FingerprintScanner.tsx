@@ -10,7 +10,7 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
     onScanningChange?.(v);
   };
   const [progress, setProgress] = useState(0);
-  const [phase, setPhase] = useState<"idle" | "dermal" | "neural" | "dna" | "cloning" | "complete">("idle");
+  const [phase, setPhase] = useState<"idle" | "dermal" | "neural" | "dna" | "cardiac" | "cloning" | "complete">("idle");
   const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; delay: number; size: number; color: string }>>([]);
   const [detectedData, setDetectedData] = useState<string[]>([]);
 
