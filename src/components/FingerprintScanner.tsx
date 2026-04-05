@@ -100,7 +100,8 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
     dermal: { color: "hsl(180,100%,50%)", label: "Scanning Dermal Patterns...", icon: Fingerprint, glow: "box-glow-cyan" },
     neural: { color: "hsl(270,80%,65%)", label: "Mapping Neural Pathways...", icon: Brain, glow: "box-glow-purple" },
     dna: { color: "hsl(140,70%,50%)", label: "Extracting DNA Sequence...", icon: Dna, glow: "" },
-    cloning: { color: "hsl(300,80%,60%)", label: "Cloning Brain & DNA...", icon: HeartPulse, glow: "" },
+    cardiac: { color: "hsl(0,80%,55%)", label: "Cloning Cardiac Structure...", icon: HeartPulse, glow: "" },
+    cloning: { color: "hsl(300,80%,60%)", label: "Finalizing Biological Clone...", icon: Sparkles, glow: "" },
     complete: { color: "hsl(120,80%,50%)", label: "Clone Complete", icon: Sparkles, glow: "" },
   };
 
