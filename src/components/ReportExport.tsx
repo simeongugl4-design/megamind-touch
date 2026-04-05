@@ -47,6 +47,29 @@ const ancestry = [
   { region: "Sub-Saharan African", pct: "3%" },
 ];
 
+const cardiacData = [
+  { metric: "Resting Heart Rate", value: "72 BPM" },
+  { metric: "Ejection Fraction", value: "62%" },
+  { metric: "Blood Pressure", value: "120/80 mmHg" },
+  { metric: "Cardiac Output", value: "5.2 L/min" },
+  { metric: "Stroke Volume", value: "72 mL" },
+  { metric: "VO₂ Max", value: "42 mL/kg/min" },
+];
+
+const valveData = [
+  { name: "Mitral Valve", status: "Normal", regurgitation: "None" },
+  { name: "Aortic Valve", status: "Normal", regurgitation: "None" },
+  { name: "Tricuspid Valve", status: "Normal", regurgitation: "Trace" },
+  { name: "Pulmonary Valve", status: "Normal", regurgitation: "None" },
+];
+
+const coronaryData = [
+  { artery: "Left Anterior Descending", blockage: "0%" },
+  { artery: "Right Coronary Artery", blockage: "2%" },
+  { artery: "Left Circumflex", blockage: "0%" },
+  { artery: "Left Main Coronary", blockage: "0%" },
+];
+
 const skills = [
   { name: "Language", level: "87%" },
   { name: "Logic & Math", level: "92%" },
