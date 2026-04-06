@@ -88,7 +88,7 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
         else if (p >= 65) setPhase("cardiac");
         else if (p >= 40) setPhase("dna");
         else if (p >= 20) setPhase("neural");
-        return p + 0.6;
+        return p + 0.8;
       });
     }, 80);
 
