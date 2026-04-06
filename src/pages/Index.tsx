@@ -82,17 +82,17 @@ const Index = () => {
               </div>
 
               {/* 3D Brain */}
-              <div className="min-h-[350px] sm:min-h-[450px]">
+              <div className="min-h-[280px] sm:min-h-[450px]">
                 <NeuralBrain3D scanning={isScanning} />
               </div>
 
               {/* 3D DNA */}
-              <div className="min-h-[350px] sm:min-h-[450px]">
+              <div className="min-h-[280px] sm:min-h-[450px]">
                 <DNAHelix3D scanning={isScanning} />
               </div>
 
               {/* 3D Heart */}
-              <div className="min-h-[350px] sm:min-h-[450px]">
+              <div className="min-h-[280px] sm:min-h-[450px]">
                 <Heart3D scanning={isScanning} />
               </div>
             </div>
