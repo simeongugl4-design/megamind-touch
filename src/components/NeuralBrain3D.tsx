@@ -196,12 +196,10 @@ const NeuralActivity = ({ scanning }: { scanning: boolean }) => {
         </mesh>
       ))}
       {scanning && connections.map((conn, i) => {
-        const geo = new THREE.BufferGeometry().setFromPoints(conn.points);
-        return (
-          <line key={`c${i}`} geometry={geo}>
-            <lineBasicMaterial color={conn.color} transparent opacity={0.3} toneMapped={false} />
-          </line>
-        );
+        const lineGeo = new THREE.BufferGeometry().setFromPoints(conn.points);
+        const lineMat = new THREE.LineBasicMaterial({ color: conn.color, transparent: true, opacity: 0.3 });
+        const lineObj = new THREE.Line(lineGeo, lineMat);
+        return <primitive key={`c${i}`} object={lineObj} />;
       })}
     </group>
   );

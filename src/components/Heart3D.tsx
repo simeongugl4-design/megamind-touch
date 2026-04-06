@@ -234,24 +234,34 @@ const BloodFlow = ({ scanning }: { scanning: boolean }) => {
 };
 
 const ECGLine = ({ scanning }: { scanning: boolean }) => {
-  const lineRef = useRef<THREE.Line>(null);
+  const lineObjRef = useRef<THREE.Line | null>(null);
+  
+  const lineObj = useMemo(() => {
+    const points: THREE.Vector3[] = [];
+    for (let i = 0; i < 100; i++) {
+      points.push(new THREE.Vector3((i / 100 - 0.5) * 4, -1.8, 0));
+    }
+    const geo = new THREE.BufferGeometry().setFromPoints(points);
+    const mat = new THREE.LineBasicMaterial({ color: "#22c55e" });
+    const line = new THREE.Line(geo, mat);
+    return line;
+  }, []);
 
   useFrame(({ clock }) => {
-    if (!lineRef.current || !scanning) return;
-    const geo = lineRef.current.geometry;
+    if (!scanning) return;
+    const geo = lineObj.geometry;
     const pos = geo.attributes.position;
     const t = clock.getElapsedTime();
     for (let i = 0; i < pos.count; i++) {
       const x = (i / pos.count - 0.5) * 4;
       const phase = x * 3 - t * 4;
-      // PQRST wave shape
       let y = 0;
       const p = ((phase % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-      if (p > 0.5 && p < 1.0) y = Math.sin((p - 0.5) * Math.PI * 2) * 0.05; // P wave
-      else if (p > 1.2 && p < 1.5) y = -Math.sin((p - 1.2) * Math.PI / 0.3) * 0.03; // Q
-      else if (p > 1.5 && p < 2.0) y = Math.sin((p - 1.5) * Math.PI / 0.5) * 0.2; // R
-      else if (p > 2.0 && p < 2.3) y = -Math.sin((p - 2.0) * Math.PI / 0.3) * 0.04; // S
-      else if (p > 2.8 && p < 3.5) y = Math.sin((p - 2.8) * Math.PI / 0.7) * 0.06; // T
+      if (p > 0.5 && p < 1.0) y = Math.sin((p - 0.5) * Math.PI * 2) * 0.05;
+      else if (p > 1.2 && p < 1.5) y = -Math.sin((p - 1.2) * Math.PI / 0.3) * 0.03;
+      else if (p > 1.5 && p < 2.0) y = Math.sin((p - 1.5) * Math.PI / 0.5) * 0.2;
+      else if (p > 2.0 && p < 2.3) y = -Math.sin((p - 2.0) * Math.PI / 0.3) * 0.04;
+      else if (p > 2.8 && p < 3.5) y = Math.sin((p - 2.8) * Math.PI / 0.7) * 0.06;
       pos.setY(i, y - 1.8);
     }
     pos.needsUpdate = true;
@@ -259,17 +269,7 @@ const ECGLine = ({ scanning }: { scanning: boolean }) => {
 
   if (!scanning) return null;
 
-  const points: THREE.Vector3[] = [];
-  for (let i = 0; i < 100; i++) {
-    points.push(new THREE.Vector3((i / 100 - 0.5) * 4, -1.8, 0));
-  }
-  const geo = new THREE.BufferGeometry().setFromPoints(points);
-
-  return (
-    <line ref={lineRef as any} geometry={geo}>
-      <lineBasicMaterial color="#22c55e" toneMapped={false} />
-    </line>
-  );
+  return <primitive object={lineObj} />;
 };
 
 const Heart3D = ({ scanning = false }: { scanning?: boolean }) => {
