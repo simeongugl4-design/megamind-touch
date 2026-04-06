@@ -67,7 +67,7 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
         setDetectedData(prev => [...prev.slice(-4), dataPoints[dataIdx]]);
         dataIdx++;
       }
-    }, 600);
+    }, 450);
 
     const interval = setInterval(() => {
       setProgress((p) => {
