@@ -74,7 +74,7 @@ const Index = () => {
             {/* Scanner + Brain row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               {/* Scanner Box */}
-              <div className="rounded-xl border border-border bg-card/30 backdrop-blur-sm p-6 sm:p-8 flex flex-col items-center justify-center min-h-[400px] sm:min-h-[450px]">
+              <div className="rounded-xl border border-border bg-card/30 backdrop-blur-sm p-4 sm:p-8 flex flex-col items-center justify-center min-h-[350px] sm:min-h-[450px]">
                 <h3 className="font-orbitron text-xs sm:text-sm tracking-widest uppercase text-secondary text-center mb-6">
                   Neural Fingerprint Scanner
                 </h3>
@@ -82,17 +82,17 @@ const Index = () => {
               </div>
 
               {/* 3D Brain */}
-              <div className="min-h-[350px] sm:min-h-[450px]">
+              <div className="min-h-[280px] sm:min-h-[450px]">
                 <NeuralBrain3D scanning={isScanning} />
               </div>
 
               {/* 3D DNA */}
-              <div className="min-h-[350px] sm:min-h-[450px]">
+              <div className="min-h-[280px] sm:min-h-[450px]">
                 <DNAHelix3D scanning={isScanning} />
               </div>
 
               {/* 3D Heart */}
-              <div className="min-h-[350px] sm:min-h-[450px]">
+              <div className="min-h-[280px] sm:min-h-[450px]">
                 <Heart3D scanning={isScanning} />
               </div>
             </div>

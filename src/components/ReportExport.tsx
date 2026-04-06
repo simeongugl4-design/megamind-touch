@@ -197,7 +197,7 @@ const ReportExport = ({ visible }: { visible: boolean }) => {
   if (!visible) return null;
 
   return (
-    <section className="px-6 lg:px-12 pb-8">
+    <section className="px-4 sm:px-6 lg:px-12 pb-6 sm:pb-8">
       <div className="max-w-7xl mx-auto">
         <div className="p-6 rounded-xl border border-primary/20 bg-gradient-to-r from-cyan-500/5 via-purple-500/5 to-green-500/5 backdrop-blur-sm flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4">

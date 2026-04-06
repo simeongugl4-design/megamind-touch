@@ -67,7 +67,7 @@ const DNAAnalysisResults = ({ visible }: { visible: boolean }) => {
   if (!visible) return null;
 
   return (
-    <section className="px-6 lg:px-12 pb-16">
+    <section className="px-4 sm:px-6 lg:px-12 pb-12 sm:pb-16">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
         <div className={`text-center transition-all duration-700 ${animateIn ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
