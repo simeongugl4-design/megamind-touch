@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import heartImg from "@/assets/heart-scan.png";
+import { useScanFx } from "@/hooks/useScanFx";
 
 const liveHeartData = [
   { label: "BPM", value: "72", unit: "" },
@@ -28,6 +29,7 @@ const Heart3D = ({ scanning = false }: { scanning?: boolean }) => {
   const [feedIdx, setFeedIdx] = useState(0);
   const [heartbeat, setHeartbeat] = useState(false);
   const [dataValues, setDataValues] = useState(liveHeartData);
+  useScanFx(scanning, "heart");
 
   useEffect(() => {
     if (!scanning) return;
@@ -87,12 +89,10 @@ const Heart3D = ({ scanning = false }: { scanning?: boolean }) => {
           src={heartImg}
           alt="Heart Clone"
           className={`w-full h-full object-cover transition-all duration-300 ${
-            scanning ? "opacity-90" : "opacity-40"
+            scanning ? "opacity-90 animate-heartbeat-pulse" : "opacity-40"
           }`}
           style={{
-            filter: scanning ? "brightness(1.1) saturate(1.2)" : "brightness(0.5) saturate(0.5)",
-            transform: heartbeat ? "scale(1.02)" : "scale(1)",
-            transition: "transform 0.15s ease-out",
+            filter: scanning ? "brightness(1.15) saturate(1.3)" : "brightness(0.5) saturate(0.5)",
           }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
@@ -192,12 +192,27 @@ const Heart3D = ({ scanning = false }: { scanning?: boolean }) => {
 
       {/* Scanning ring */}
       {scanning && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-15 pointer-events-none">
-          <svg width="120" height="120" className="animate-spin-slow opacity-25">
-            <circle cx="60" cy="60" r="55" fill="none" stroke="hsl(0 84% 60% / 0.4)" strokeWidth="1" strokeDasharray="8 4" />
-            <circle cx="60" cy="60" r="45" fill="none" stroke="hsl(180 100% 50% / 0.3)" strokeWidth="1" strokeDasharray="4 8" />
-          </svg>
-        </div>
+        <>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[15] pointer-events-none animate-spin-slow">
+            <svg width="160" height="160" className="opacity-40">
+              <circle cx="80" cy="80" r="70" fill="none" stroke="hsl(0 84% 60% / 0.5)" strokeWidth="1" strokeDasharray="8 4" />
+            </svg>
+          </div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[15] pointer-events-none animate-spin-reverse">
+            <svg width="120" height="120" className="opacity-30">
+              <circle cx="60" cy="60" r="52" fill="none" stroke="hsl(180 100% 50% / 0.5)" strokeWidth="1" strokeDasharray="4 8" />
+            </svg>
+          </div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[15] pointer-events-none animate-radar-sweep">
+            <div
+              className="w-[140px] h-[2px]"
+              style={{
+                background: "linear-gradient(90deg, hsl(0 84% 60% / 0.95), transparent)",
+                boxShadow: "0 0 14px hsl(0 84% 60% / 0.9)",
+              }}
+            />
+          </div>
+        </>
       )}
     </div>
   );

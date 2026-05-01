@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import brainImg from "@/assets/brain-scan.png";
+import { useScanFx } from "@/hooks/useScanFx";
 
 const liveBrainData = [
   { label: "Neurons", value: "86B", unit: "" },
@@ -27,6 +28,7 @@ const NeuralBrain3D = ({ scanning = false }: { scanning?: boolean }) => {
   const [scanY, setScanY] = useState(0);
   const [feedIdx, setFeedIdx] = useState(0);
   const [dataValues, setDataValues] = useState(liveBrainData);
+  useScanFx(scanning, "brain");
 
   useEffect(() => {
     if (!scanning) return;
@@ -76,9 +78,9 @@ const NeuralBrain3D = ({ scanning = false }: { scanning?: boolean }) => {
           src={brainImg}
           alt="Neural Clone"
           className={`w-full h-full object-cover transition-all duration-1000 ${
-            scanning ? "opacity-90 scale-105" : "opacity-40 scale-100"
+            scanning ? "opacity-90 animate-brain-throb" : "opacity-40 scale-100"
           }`}
-          style={{ filter: scanning ? "hue-rotate(0deg) brightness(1.1) saturate(1.3)" : "brightness(0.5) saturate(0.5)" }}
+          style={{ filter: scanning ? "hue-rotate(0deg) brightness(1.15) saturate(1.35)" : "brightness(0.5) saturate(0.5)" }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-transparent to-background/80" />
@@ -162,12 +164,27 @@ const NeuralBrain3D = ({ scanning = false }: { scanning?: boolean }) => {
 
       {/* Scanning progress ring */}
       {scanning && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
-          <svg width="120" height="120" className="animate-spin-slow opacity-30">
-            <circle cx="60" cy="60" r="55" fill="none" stroke="hsl(180 100% 50% / 0.4)" strokeWidth="1" strokeDasharray="8 4" />
-            <circle cx="60" cy="60" r="45" fill="none" stroke="hsl(270 80% 65% / 0.3)" strokeWidth="1" strokeDasharray="4 8" />
-          </svg>
-        </div>
+        <>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none animate-spin-slow">
+            <svg width="160" height="160" className="opacity-40">
+              <circle cx="80" cy="80" r="70" fill="none" stroke="hsl(180 100% 50% / 0.5)" strokeWidth="1" strokeDasharray="8 4" />
+            </svg>
+          </div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none animate-spin-reverse">
+            <svg width="120" height="120" className="opacity-35">
+              <circle cx="60" cy="60" r="52" fill="none" stroke="hsl(270 80% 65% / 0.5)" strokeWidth="1" strokeDasharray="4 8" />
+            </svg>
+          </div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none animate-radar-sweep">
+            <div
+              className="w-[140px] h-[2px]"
+              style={{
+                background: "linear-gradient(90deg, hsl(270 80% 65% / 0.9), transparent)",
+                boxShadow: "0 0 12px hsl(270 80% 65% / 0.8)",
+              }}
+            />
+          </div>
+        </>
       )}
     </div>
   );

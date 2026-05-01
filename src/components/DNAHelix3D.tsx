@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import dnaImg from "@/assets/dna-scan.png";
+import { useScanFx } from "@/hooks/useScanFx";
 
 const liveDnaData = [
   { label: "Base Pairs", value: "3.2B", unit: "" },
@@ -27,6 +28,7 @@ const DNAHelix3D = ({ scanning = false }: { scanning?: boolean }) => {
   const [scanY, setScanY] = useState(0);
   const [feedIdx, setFeedIdx] = useState(0);
   const [dataValues, setDataValues] = useState(liveDnaData);
+  useScanFx(scanning, "dna");
 
   useEffect(() => {
     if (!scanning) return;
@@ -76,9 +78,9 @@ const DNAHelix3D = ({ scanning = false }: { scanning?: boolean }) => {
           src={dnaImg}
           alt="DNA Clone"
           className={`w-full h-full object-cover transition-all duration-1000 ${
-            scanning ? "opacity-90 scale-105" : "opacity-40 scale-100"
+            scanning ? "opacity-90 animate-scan-spin-img" : "opacity-40 scale-100"
           }`}
-          style={{ filter: scanning ? "brightness(1.1) saturate(1.3) hue-rotate(-10deg)" : "brightness(0.5) saturate(0.5)" }}
+          style={{ filter: scanning ? "brightness(1.15) saturate(1.4) hue-rotate(-10deg)" : "brightness(0.5) saturate(0.5)" }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-transparent to-background/80" />
@@ -162,12 +164,27 @@ const DNAHelix3D = ({ scanning = false }: { scanning?: boolean }) => {
 
       {/* Scanning ring */}
       {scanning && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-15 pointer-events-none">
-          <svg width="120" height="120" className="animate-spin-slow opacity-25">
-            <circle cx="60" cy="60" r="55" fill="none" stroke="hsl(142 71% 45% / 0.4)" strokeWidth="1" strokeDasharray="8 4" />
-            <circle cx="60" cy="60" r="45" fill="none" stroke="hsl(180 100% 50% / 0.3)" strokeWidth="1" strokeDasharray="4 8" />
-          </svg>
-        </div>
+        <>
+          <div className="absolute top-1/2 left-1/2 z-[15] pointer-events-none animate-orbit-spin">
+            <svg width="160" height="160" className="opacity-40 -translate-x-1/2 -translate-y-1/2 absolute">
+              <circle cx="80" cy="80" r="70" fill="none" stroke="hsl(142 71% 45% / 0.5)" strokeWidth="1" strokeDasharray="10 6" />
+            </svg>
+          </div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[15] pointer-events-none animate-spin-reverse">
+            <svg width="120" height="120" className="opacity-30">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="hsl(180 100% 50% / 0.5)" strokeWidth="1" strokeDasharray="4 8" />
+            </svg>
+          </div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[15] pointer-events-none animate-radar-sweep">
+            <div
+              className="w-[140px] h-[2px]"
+              style={{
+                background: "linear-gradient(90deg, hsl(142 71% 45% / 0.9), transparent)",
+                boxShadow: "0 0 12px hsl(142 71% 45% / 0.8)",
+              }}
+            />
+          </div>
+        </>
       )}
     </div>
   );
