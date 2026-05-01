@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Fingerprint, Brain, Zap, Sparkles, Dna, HeartPulse } from "lucide-react";
+import { useScanFx } from "@/hooks/useScanFx";
 
 const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningChange?: (scanning: boolean) => void; onScanComplete?: () => void }) => {
   const [scanning, setScanningState] = useState(false);
@@ -11,6 +12,9 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
   };
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState<"idle" | "dermal" | "neural" | "dna" | "cardiac" | "cloning" | "complete">("idle");
+  // Layer scanner-side FX matching the active phase
+  const fxProfile = phase === "cardiac" ? "heart" : phase === "dna" ? "dna" : "brain";
+  useScanFx(scanning && phase !== "complete", fxProfile as "dna" | "brain" | "heart");
   const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; delay: number; size: number; color: string }>>([]);
   const [detectedData, setDetectedData] = useState<string[]>([]);
 
