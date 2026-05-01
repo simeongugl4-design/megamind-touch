@@ -1,15 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import heartImg from "@/assets/heart-scan.png";
 import { useScanFx } from "@/hooks/useScanFx";
-
-const liveHeartData = [
-  { label: "BPM", value: "72", unit: "" },
-  { label: "EF", value: "62", unit: "%" },
-  { label: "BP", value: "120/80", unit: "" },
-  { label: "O₂ Sat", value: "98.2", unit: "%" },
-  { label: "CO", value: "5.2", unit: "L/min" },
-  { label: "SV", value: "70", unit: "mL" },
-];
+import { useLiveSensor, type SensorChannel } from "@/hooks/useLiveSensor";
 
 const scanFeedLines = [
   "Left ventricle wall: 11mm — normal",
@@ -28,8 +20,18 @@ const Heart3D = ({ scanning = false }: { scanning?: boolean }) => {
   const [scanY, setScanY] = useState(0);
   const [feedIdx, setFeedIdx] = useState(0);
   const [heartbeat, setHeartbeat] = useState(false);
-  const [dataValues, setDataValues] = useState(liveHeartData);
   useScanFx(scanning, "heart");
+
+  // Hospital-grade cardiac channels with realistic clinical ranges (AHA reference)
+  const channels = useMemo<SensorChannel[]>(() => [
+    { key: "hr", label: "HR", unit: "bpm", base: 72, min: 60, max: 100, noise: 3, drift: 2.5, driftPeriod: 9, decimals: 0 },
+    { key: "sbp", label: "SBP", unit: "mmHg", base: 120, min: 110, max: 130, noise: 2, drift: 3, driftPeriod: 12, decimals: 0 },
+    { key: "dbp", label: "DBP", unit: "mmHg", base: 80, min: 70, max: 85, noise: 1.5, drift: 2, driftPeriod: 11, decimals: 0 },
+    { key: "spo2", label: "SpO₂", unit: "%", base: 98, min: 95, max: 100, noise: 0.4, drift: 0.5, driftPeriod: 7, decimals: 1 },
+    { key: "ef", label: "EF", unit: "%", base: 62, min: 55, max: 70, noise: 0.6, drift: 1.5, driftPeriod: 14, decimals: 0 },
+    { key: "co", label: "CO", unit: "L/min", base: 5.2, min: 4.0, max: 8.0, noise: 0.15, drift: 0.3, driftPeriod: 10, decimals: 2 },
+  ], []);
+  const { readings, confidence } = useLiveSensor(channels, scanning);
 
   useEffect(() => {
     if (!scanning) return;
@@ -54,30 +56,6 @@ const Heart3D = ({ scanning = false }: { scanning?: boolean }) => {
       setHeartbeat(true);
       setTimeout(() => setHeartbeat(false), 200);
     }, 830); // ~72 BPM
-    return () => clearInterval(interval);
-  }, [scanning]);
-
-  useEffect(() => {
-    if (!scanning) return;
-    const interval = setInterval(() => {
-      setDataValues((prev) =>
-        prev.map((d) => ({
-          ...d,
-          value:
-            d.label === "BPM"
-              ? String(70 + Math.floor(Math.random() * 6))
-              : d.label === "EF"
-              ? (60 + Math.random() * 5).toFixed(0)
-              : d.label === "BP"
-              ? `${118 + Math.floor(Math.random() * 6)}/${78 + Math.floor(Math.random() * 4)}`
-              : d.label === "O₂ Sat"
-              ? (97.5 + Math.random() * 1.5).toFixed(1)
-              : d.label === "CO"
-              ? (4.8 + Math.random() * 0.8).toFixed(1)
-              : String(68 + Math.floor(Math.random() * 6)),
-        }))
-      );
-    }, 800);
     return () => clearInterval(interval);
   }, [scanning]);
 
@@ -176,13 +154,27 @@ const Heart3D = ({ scanning = false }: { scanning?: boolean }) => {
             <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
             <span className="font-mono text-[9px] sm:text-[10px] text-red-400">HEART CLONE ACTIVE</span>
             <div className="flex-1 h-px bg-gradient-to-r from-red-400/50 to-transparent" />
+            <span className="font-mono text-[9px] sm:text-[10px] text-red-300 tabular-nums">
+              {confidence.toFixed(2)}%
+            </span>
+          </div>
+          {/* Confidence bar */}
+          <div className="h-1 mb-2 rounded-full bg-background/60 overflow-hidden">
+            <div
+              className="h-full transition-[width] duration-100 ease-linear"
+              style={{
+                width: `${confidence}%`,
+                background: "linear-gradient(90deg, hsl(0 84% 60%), hsl(0 84% 75%))",
+                boxShadow: "0 0 8px hsl(0 84% 60% / 0.7)",
+              }}
+            />
           </div>
           <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-            {dataValues.map((s) => (
-              <div key={s.label} className="px-1.5 sm:px-2 py-1 rounded bg-background/70 backdrop-blur-md border border-red-400/20">
+            {readings.map((s) => (
+              <div key={s.key} className="px-1.5 sm:px-2 py-1 rounded bg-background/70 backdrop-blur-md border border-red-400/20">
                 <p className="font-mono text-[7px] sm:text-[8px] text-muted-foreground uppercase">{s.label}</p>
-                <p className="font-orbitron text-[10px] sm:text-[11px] font-bold text-red-400">
-                  {s.value}<span className="text-[7px] text-muted-foreground ml-0.5">{s.unit}</span>
+                <p className="font-orbitron text-[10px] sm:text-[11px] font-bold text-red-400 tabular-nums">
+                  {s.display}<span className="text-[7px] text-muted-foreground ml-0.5">{s.unit}</span>
                 </p>
               </div>
             ))}
