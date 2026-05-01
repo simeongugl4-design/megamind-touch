@@ -109,6 +109,47 @@
 .animate-fade-in { animation: fade-in 0.3s ease-out; }
 .animate-spin-slow { animation: spin 8s linear infinite; }
 
+@keyframes spin-reverse {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+@keyframes radar-sweep {
+  0% { transform: rotate(0deg); opacity: 0.0; }
+  10% { opacity: 0.9; }
+  100% { transform: rotate(360deg); opacity: 0.0; }
+}
+@keyframes orbit-spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+@keyframes scan-spin-img {
+  0%   { transform: rotate(0deg) scale(1.05); }
+  50%  { transform: rotate(180deg) scale(1.08); }
+  100% { transform: rotate(360deg) scale(1.05); }
+}
+@keyframes heartbeat-pulse {
+  0%, 60%, 100% { transform: scale(1); }
+  20% { transform: scale(1.05); }
+  35% { transform: scale(0.98); }
+}
+@keyframes brain-throb {
+  0%, 100% { transform: scale(1.02); filter: hue-rotate(0deg); }
+  50%      { transform: scale(1.06); filter: hue-rotate(20deg); }
+}
+@keyframes scanline-vertical {
+  0%   { top: -2%; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { top: 102%; opacity: 0; }
+}
+
+.animate-spin-reverse { animation: spin-reverse 12s linear infinite; }
+.animate-radar-sweep { animation: radar-sweep 2.4s linear infinite; transform-origin: center; }
+.animate-orbit-spin { animation: orbit-spin 6s linear infinite; }
+.animate-scan-spin-img { animation: scan-spin-img 14s linear infinite; transform-origin: center; }
+.animate-heartbeat-pulse { animation: heartbeat-pulse 0.83s ease-in-out infinite; transform-origin: center; }
+.animate-brain-throb { animation: brain-throb 3.4s ease-in-out infinite; transform-origin: center; }
+
 .text-glow-cyan {
   text-shadow: 0 0 10px hsl(180 100% 50% / 0.8), 0 0 30px hsl(180 100% 50% / 0.4);
 }
