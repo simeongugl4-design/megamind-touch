@@ -207,14 +207,18 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
 
         {/* Main circle */}
         <div
-          className={`relative w-52 h-52 rounded-full border-2 flex items-center justify-center cursor-pointer transition-all duration-500 ${
-            !scanning ? "border-muted hover:border-primary/50 hover:shadow-[0_0_30px_hsl(180,100%,50%,0.15)]" : cfg.glow
-          }`}
-          onClick={() => !scanning && setScanning(true)}
+          className={`relative w-52 h-52 rounded-full border-2 flex items-center justify-center transition-all duration-500 ${
+            locked ? "cursor-not-allowed" : "cursor-pointer"
+          } ${
+            !scanning && !locked ? "border-muted hover:border-primary/50 hover:shadow-[0_0_30px_hsl(180,100%,50%,0.15)]" : cfg.glow
+          } ${denied ? "animate-shake" : ""}`}
+          onClick={handleScanClick}
+          aria-disabled={locked}
           style={{
             ...(scanning && !cfg.glow ? getPhaseGlow() : {}),
             ...(phase === "complete" ? getPhaseGlow() : {}),
-            borderColor: scanning ? cfg.color : undefined,
+            borderColor: scanning ? cfg.color : cooldownLeft > 0 ? "hsl(45,100%,55%)" : undefined,
+            opacity: cooldownLeft > 0 && !scanning ? 0.7 : 1,
           }}
         >
           {/* Inner glow */}
