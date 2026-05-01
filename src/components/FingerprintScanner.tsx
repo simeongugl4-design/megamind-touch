@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Fingerprint, Brain, Zap, Sparkles, Dna, HeartPulse } from "lucide-react";
+import { Fingerprint, Brain, Zap, Sparkles, Dna, HeartPulse, Lock } from "lucide-react";
 import { useScanFx } from "@/hooks/useScanFx";
 
 const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningChange?: (scanning: boolean) => void; onScanComplete?: () => void }) => {
@@ -12,6 +12,12 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
   };
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState<"idle" | "dermal" | "neural" | "dna" | "cardiac" | "cloning" | "complete">("idle");
+  // Lockout: blocks restart while scanning OR during post-scan cooldown
+  const COOLDOWN_MS = 5000;
+  const [cooldownLeft, setCooldownLeft] = useState(0);
+  const [denied, setDenied] = useState(false);
+  const cooldownUntilRef = useRef(0);
+  const locked = scanning || cooldownLeft > 0;
   // Layer scanner-side FX matching the active phase
   const fxProfile = phase === "cardiac" ? "heart" : phase === "dna" ? "dna" : "brain";
   useScanFx(scanning && phase !== "complete", fxProfile as "dna" | "brain" | "heart");
@@ -80,6 +86,9 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
           clearInterval(dataInterval);
           setPhase("complete");
           onScanCompleteRef.current?.();
+          // Start post-scan cooldown so SFX/haptics can't relaunch immediately
+          cooldownUntilRef.current = Date.now() + COOLDOWN_MS;
+          setCooldownLeft(COOLDOWN_MS);
           setTimeout(() => {
             setScanning(false);
             setPhase("idle");
@@ -98,6 +107,30 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
 
     return () => { clearInterval(interval); clearInterval(dataInterval); };
   }, [scanning]);
+
+  // Cooldown countdown ticker
+  useEffect(() => {
+    if (cooldownLeft <= 0) return;
+    const id = window.setInterval(() => {
+      const remaining = Math.max(0, cooldownUntilRef.current - Date.now());
+      setCooldownLeft(remaining);
+      if (remaining <= 0) window.clearInterval(id);
+    }, 100);
+    return () => window.clearInterval(id);
+  }, [cooldownLeft > 0]);
+
+  const handleScanClick = () => {
+    if (locked) {
+      // Reject: short shake + denied haptic, no audio re-trigger
+      setDenied(true);
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate([30, 40, 30]);
+      }
+      window.setTimeout(() => setDenied(false), 450);
+      return;
+    }
+    setScanning(true);
+  };
 
   const phaseConfig: Record<string, { color: string; label: string; icon: typeof Fingerprint; glow: string }> = {
     idle: { color: "hsl(180,100%,50%)", label: "Touch to Begin Scan", icon: Fingerprint, glow: "" },
@@ -174,14 +207,18 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
 
         {/* Main circle */}
         <div
-          className={`relative w-52 h-52 rounded-full border-2 flex items-center justify-center cursor-pointer transition-all duration-500 ${
-            !scanning ? "border-muted hover:border-primary/50 hover:shadow-[0_0_30px_hsl(180,100%,50%,0.15)]" : cfg.glow
-          }`}
-          onClick={() => !scanning && setScanning(true)}
+          className={`relative w-52 h-52 rounded-full border-2 flex items-center justify-center transition-all duration-500 ${
+            locked ? "cursor-not-allowed" : "cursor-pointer"
+          } ${
+            !scanning && !locked ? "border-muted hover:border-primary/50 hover:shadow-[0_0_30px_hsl(180,100%,50%,0.15)]" : cfg.glow
+          } ${denied ? "animate-shake" : ""}`}
+          onClick={handleScanClick}
+          aria-disabled={locked}
           style={{
             ...(scanning && !cfg.glow ? getPhaseGlow() : {}),
             ...(phase === "complete" ? getPhaseGlow() : {}),
-            borderColor: scanning ? cfg.color : undefined,
+            borderColor: scanning ? cfg.color : cooldownLeft > 0 ? "hsl(45,100%,55%)" : undefined,
+            opacity: cooldownLeft > 0 && !scanning ? 0.7 : 1,
           }}
         >
           {/* Inner glow */}
@@ -229,10 +266,23 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
 
       {/* Status */}
       <div className="text-center space-y-2 min-h-[80px]">
-        <p className="font-orbitron text-sm tracking-widest uppercase" style={{ color: cfg.color, textShadow: scanning ? `0 0 10px ${cfg.color}80` : "none" }}>
-          {phase === "complete" && <Zap className="w-4 h-4 inline mr-1" />}
-          {cfg.label}
-        </p>
+        {!scanning && cooldownLeft > 0 ? (
+          <p className="font-orbitron text-sm tracking-widest uppercase flex items-center justify-center gap-2"
+            style={{ color: "hsl(45,100%,55%)", textShadow: "0 0 10px hsl(45,100%,55%,0.5)" }}>
+            <Lock className="w-4 h-4" />
+            System Cooling Down — {(cooldownLeft / 1000).toFixed(1)}s
+          </p>
+        ) : (
+          <p className="font-orbitron text-sm tracking-widest uppercase" style={{ color: cfg.color, textShadow: scanning ? `0 0 10px ${cfg.color}80` : "none" }}>
+            {phase === "complete" && <Zap className="w-4 h-4 inline mr-1" />}
+            {cfg.label}
+          </p>
+        )}
+        {denied && (
+          <p className="font-mono text-[10px] text-destructive animate-fade-in">
+            ⚠ Scanner locked — wait for current cycle to finish
+          </p>
+        )}
         {scanning && (
           <div className="space-y-1">
             <p className="font-mono text-xs text-muted-foreground">
