@@ -266,10 +266,23 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
 
       {/* Status */}
       <div className="text-center space-y-2 min-h-[80px]">
-        <p className="font-orbitron text-sm tracking-widest uppercase" style={{ color: cfg.color, textShadow: scanning ? `0 0 10px ${cfg.color}80` : "none" }}>
-          {phase === "complete" && <Zap className="w-4 h-4 inline mr-1" />}
-          {cfg.label}
-        </p>
+        {!scanning && cooldownLeft > 0 ? (
+          <p className="font-orbitron text-sm tracking-widest uppercase flex items-center justify-center gap-2"
+            style={{ color: "hsl(45,100%,55%)", textShadow: "0 0 10px hsl(45,100%,55%,0.5)" }}>
+            <Lock className="w-4 h-4" />
+            System Cooling Down — {(cooldownLeft / 1000).toFixed(1)}s
+          </p>
+        ) : (
+          <p className="font-orbitron text-sm tracking-widest uppercase" style={{ color: cfg.color, textShadow: scanning ? `0 0 10px ${cfg.color}80` : "none" }}>
+            {phase === "complete" && <Zap className="w-4 h-4 inline mr-1" />}
+            {cfg.label}
+          </p>
+        )}
+        {denied && (
+          <p className="font-mono text-[10px] text-destructive animate-fade-in">
+            ⚠ Scanner locked — wait for current cycle to finish
+          </p>
+        )}
         {scanning && (
           <div className="space-y-1">
             <p className="font-mono text-xs text-muted-foreground">
