@@ -1,15 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import dnaImg from "@/assets/dna-scan.png";
 import { useScanFx } from "@/hooks/useScanFx";
-
-const liveDnaData = [
-  { label: "Base Pairs", value: "3.2B", unit: "" },
-  { label: "Chromosomes", value: "23", unit: "Pairs" },
-  { label: "Accuracy", value: "99.97", unit: "%" },
-  { label: "GC Content", value: "41.2", unit: "%" },
-  { label: "SNPs Found", value: "4.1M", unit: "" },
-  { label: "Telomere", value: "7.8", unit: "kb" },
-];
+import { useLiveSensor, type SensorChannel } from "@/hooks/useLiveSensor";
 
 const scanFeedLines = [
   "Sequencing chromosome 1...",
@@ -27,8 +19,18 @@ const scanFeedLines = [
 const DNAHelix3D = ({ scanning = false }: { scanning?: boolean }) => {
   const [scanY, setScanY] = useState(0);
   const [feedIdx, setFeedIdx] = useState(0);
-  const [dataValues, setDataValues] = useState(liveDnaData);
   useScanFx(scanning, "dna");
+
+  // Genomic sequencer telemetry — values typical of Illumina/Nanopore runs
+  const channels = useMemo<SensorChannel[]>(() => [
+    { key: "qscore", label: "Q-Score", unit: "", base: 36, min: 30, max: 40, noise: 0.4, drift: 0.8, driftPeriod: 8, decimals: 1 },
+    { key: "cov", label: "Coverage", unit: "x", base: 32, min: 25, max: 40, noise: 0.5, drift: 1.5, driftPeriod: 10, decimals: 1 },
+    { key: "gc", label: "GC", unit: "%", base: 41.2, min: 39, max: 43, noise: 0.2, drift: 0.4, driftPeriod: 7, decimals: 2 },
+    { key: "snp", label: "SNPs", unit: "M", base: 4.1, min: 3.8, max: 4.4, noise: 0.02, drift: 0.05, driftPeriod: 9, decimals: 2 },
+    { key: "telo", label: "Telomere", unit: "kb", base: 7.8, min: 7.0, max: 9.0, noise: 0.05, drift: 0.15, driftPeriod: 11, decimals: 2 },
+    { key: "rate", label: "Reads", unit: "k/s", base: 850, min: 750, max: 950, noise: 18, drift: 35, driftPeriod: 6, decimals: 0 },
+  ], []);
+  const { readings, confidence } = useLiveSensor(channels, scanning);
 
   useEffect(() => {
     if (!scanning) return;
@@ -43,30 +45,6 @@ const DNAHelix3D = ({ scanning = false }: { scanning?: boolean }) => {
     const interval = setInterval(() => {
       setFeedIdx((prev) => (prev + 1) % scanFeedLines.length);
     }, 1200);
-    return () => clearInterval(interval);
-  }, [scanning]);
-
-  useEffect(() => {
-    if (!scanning) return;
-    const interval = setInterval(() => {
-      setDataValues((prev) =>
-        prev.map((d) => ({
-          ...d,
-          value:
-            d.label === "Base Pairs"
-              ? "3.2B"
-              : d.label === "Chromosomes"
-              ? "23"
-              : d.label === "Accuracy"
-              ? (99.9 + Math.random() * 0.09).toFixed(2)
-              : d.label === "GC Content"
-              ? (40 + Math.random() * 3).toFixed(1)
-              : d.label === "SNPs Found"
-              ? `${(4.0 + Math.random() * 0.3).toFixed(1)}M`
-              : (7.5 + Math.random() * 0.8).toFixed(1),
-        }))
-      );
-    }, 800);
     return () => clearInterval(interval);
   }, [scanning]);
 
@@ -148,13 +126,26 @@ const DNAHelix3D = ({ scanning = false }: { scanning?: boolean }) => {
             <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
             <span className="font-mono text-[9px] sm:text-[10px] text-green-400">DNA CLONE ACTIVE</span>
             <div className="flex-1 h-px bg-gradient-to-r from-green-400/50 to-transparent" />
+            <span className="font-mono text-[9px] sm:text-[10px] text-green-300 tabular-nums">
+              {confidence.toFixed(2)}%
+            </span>
+          </div>
+          <div className="h-1 mb-2 rounded-full bg-background/60 overflow-hidden">
+            <div
+              className="h-full transition-[width] duration-100 ease-linear"
+              style={{
+                width: `${confidence}%`,
+                background: "linear-gradient(90deg, hsl(142 71% 45%), hsl(180 100% 50%))",
+                boxShadow: "0 0 8px hsl(142 71% 45% / 0.7)",
+              }}
+            />
           </div>
           <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-            {dataValues.map((s) => (
-              <div key={s.label} className="px-1.5 sm:px-2 py-1 rounded bg-background/70 backdrop-blur-md border border-green-400/20">
+            {readings.map((s) => (
+              <div key={s.key} className="px-1.5 sm:px-2 py-1 rounded bg-background/70 backdrop-blur-md border border-green-400/20">
                 <p className="font-mono text-[7px] sm:text-[8px] text-muted-foreground uppercase">{s.label}</p>
-                <p className="font-orbitron text-[10px] sm:text-[11px] font-bold text-green-400">
-                  {s.value}<span className="text-[7px] text-muted-foreground ml-0.5">{s.unit}</span>
+                <p className="font-orbitron text-[10px] sm:text-[11px] font-bold text-green-400 tabular-nums">
+                  {s.display}<span className="text-[7px] text-muted-foreground ml-0.5">{s.unit}</span>
                 </p>
               </div>
             ))}
