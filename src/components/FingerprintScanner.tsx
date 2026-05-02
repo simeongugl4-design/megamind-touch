@@ -314,8 +314,18 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
             </div>
           )}
 
+          {/* Calibration ring sweep */}
+          {calibrating && (
+            <div className="absolute inset-0 overflow-hidden rounded-full">
+              <div
+                className="w-full h-1.5 animate-scan-line"
+                style={{ background: "linear-gradient(to right, transparent, hsl(45,100%,55%), transparent)" }}
+              />
+            </div>
+          )}
+
           {/* Icon */}
-          <div className={`transition-all duration-500 ${scanning ? "animate-pulse-glow" : ""}`}>
+          <div className={`transition-all duration-500 ${scanning || calibrating ? "animate-pulse-glow" : ""}`}>
             <PhaseIcon className="w-16 h-16" style={{ color: cfg.color }} />
           </div>
 
@@ -329,7 +339,7 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
               strokeWidth="4"
               strokeLinecap="round"
               strokeDasharray={`${2 * Math.PI * 98}`}
-              strokeDashoffset={`${2 * Math.PI * 98 * (1 - progress / 100)}`}
+              strokeDashoffset={`${2 * Math.PI * 98 * (1 - (calibrating ? calibProgress : progress) / 100)}`}
               className="transition-all duration-100"
               style={{ filter: `drop-shadow(0 0 6px ${cfg.color})` }}
             />
@@ -356,6 +366,62 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
             ⚠ Scanner locked — wait for current cycle to finish
           </p>
         )}
+
+        {/* Pre-scan calibration live readout */}
+        {calibrating && (
+          <div className="mt-3 max-w-[280px] mx-auto rounded-lg border border-amber-400/30 bg-amber-400/5 p-2.5 animate-fade-in">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="font-mono text-[9px] uppercase tracking-wider text-amber-300/90">
+                Calibration · {calibProgress.toFixed(0)}%
+              </span>
+              <span className="font-mono text-[9px] text-amber-300/70 tabular-nums">
+                Confidence {calibMetrics.confidence.toFixed(1)}%
+              </span>
+            </div>
+            <div className="h-1 mb-2 rounded-full bg-background/60 overflow-hidden">
+              <div
+                className="h-full transition-[width] duration-100 ease-linear"
+                style={{
+                  width: `${calibProgress}%`,
+                  background: "linear-gradient(90deg, hsl(45,100%,55%), hsl(120,80%,55%))",
+                  boxShadow: "0 0 8px hsl(45,100%,55%,0.6)",
+                }}
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-1.5">
+              {[
+                { label: "SNR", value: calibMetrics.snr.toFixed(1), unit: "dB" },
+                { label: "Drift", value: calibMetrics.drift.toFixed(2), unit: "mV/s" },
+                { label: "Align", value: calibMetrics.alignment.toFixed(1), unit: "%" },
+              ].map((m) => (
+                <div key={m.label} className="rounded bg-background/60 border border-amber-400/20 px-1.5 py-1">
+                  <p className="font-mono text-[7px] uppercase text-muted-foreground">{m.label}</p>
+                  <p className="font-orbitron text-[10px] font-bold text-amber-300 tabular-nums">
+                    {m.value}<span className="text-[7px] text-muted-foreground ml-0.5">{m.unit}</span>
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Calibration result handoff */}
+        {calibReport && (
+          <div className="mt-2 max-w-[280px] mx-auto rounded-lg border border-green-400/40 bg-green-400/5 p-2 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <span className="font-orbitron text-[10px] tracking-widest uppercase text-green-300">
+                Calibration {calibReport.grade} · {calibReport.confidence.toFixed(1)}%
+              </span>
+              <span className="font-mono text-[9px] text-green-300/80 tabular-nums">
+                SNR {calibReport.snr.toFixed(1)}dB · Drift {calibReport.drift.toFixed(2)}
+              </span>
+            </div>
+            <p className="font-mono text-[9px] text-green-300/70 mt-0.5">
+              Sensors locked — initiating 10s acquisition...
+            </p>
+          </div>
+        )}
+
         {scanning && (
           <div className="space-y-1">
             <p className="font-mono text-xs text-muted-foreground">
