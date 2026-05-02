@@ -50,18 +50,46 @@ const DNAHelix3D = ({ scanning = false }: { scanning?: boolean }) => {
 
   return (
     <div className="w-full h-full min-h-[280px] sm:min-h-[350px] rounded-xl border border-border bg-card/30 backdrop-blur-sm overflow-hidden relative group">
-      {/* Background image */}
-      <div className="absolute inset-0">
-        <img
-          src={dnaImg}
-          alt="DNA Clone"
-          className={`w-full h-full object-cover transition-all duration-1000 ${
-            scanning ? "opacity-90 animate-scan-spin-img" : "opacity-40 scale-100"
-          }`}
-          style={{ filter: scanning ? "brightness(1.15) saturate(1.4) hue-rotate(-10deg)" : "brightness(0.5) saturate(0.5)" }}
-        />
+      {/* Background — infinite upward DNA stream during scan */}
+      <div className="absolute inset-0 overflow-hidden">
+        {scanning ? (
+          <div className="absolute inset-x-0 top-0 h-[200%] animate-dna-stream">
+            <img
+              src={dnaImg}
+              alt="DNA Clone"
+              className="w-full h-1/2 object-cover opacity-95"
+              style={{ filter: "brightness(1.18) saturate(1.45) hue-rotate(-10deg)" }}
+            />
+            <img
+              src={dnaImg}
+              alt=""
+              aria-hidden
+              className="w-full h-1/2 object-cover opacity-95"
+              style={{ filter: "brightness(1.18) saturate(1.45) hue-rotate(-10deg)" }}
+            />
+          </div>
+        ) : (
+          <img
+            src={dnaImg}
+            alt="DNA Clone"
+            className="w-full h-full object-cover opacity-40"
+            style={{ filter: "brightness(0.5) saturate(0.5)" }}
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-transparent to-background/80" />
+        {/* Holographic shimmer sweep */}
+        {scanning && (
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div
+              className="absolute top-0 bottom-0 w-1/3 animate-holo-shimmer"
+              style={{
+                background:
+                  "linear-gradient(90deg, transparent, hsl(142 71% 65% / 0.18), transparent)",
+              }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Scan line */}
@@ -153,29 +181,22 @@ const DNAHelix3D = ({ scanning = false }: { scanning?: boolean }) => {
         </div>
       )}
 
-      {/* Scanning ring */}
+      {/* Vertical sequencing tracks (no spinning) */}
       {scanning && (
-        <>
-          <div className="absolute top-1/2 left-1/2 z-[15] pointer-events-none animate-orbit-spin">
-            <svg width="160" height="160" className="opacity-40 -translate-x-1/2 -translate-y-1/2 absolute">
-              <circle cx="80" cy="80" r="70" fill="none" stroke="hsl(142 71% 45% / 0.5)" strokeWidth="1" strokeDasharray="10 6" />
-            </svg>
-          </div>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[15] pointer-events-none animate-spin-reverse">
-            <svg width="120" height="120" className="opacity-30">
-              <circle cx="60" cy="60" r="50" fill="none" stroke="hsl(180 100% 50% / 0.5)" strokeWidth="1" strokeDasharray="4 8" />
-            </svg>
-          </div>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[15] pointer-events-none animate-radar-sweep">
+        <div className="absolute inset-y-0 left-0 right-0 z-[15] pointer-events-none flex justify-around opacity-40">
+          {[0, 1, 2, 3, 4].map((i) => (
             <div
-              className="w-[140px] h-[2px]"
+              key={i}
+              className="w-px h-full"
               style={{
-                background: "linear-gradient(90deg, hsl(142 71% 45% / 0.9), transparent)",
-                boxShadow: "0 0 12px hsl(142 71% 45% / 0.8)",
+                background:
+                  "linear-gradient(180deg, transparent, hsl(142 71% 55% / 0.6), transparent)",
+                animation: `dna-stream-up ${4 + i * 0.6}s linear infinite`,
+                animationDelay: `${i * 0.2}s`,
               }}
             />
-          </div>
-        </>
+          ))}
+        </div>
       )}
     </div>
   );

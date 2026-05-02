@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import heartImg from "@/assets/heart-scan.png";
 import { useScanFx } from "@/hooks/useScanFx";
 import { useLiveSensor, type SensorChannel } from "@/hooks/useLiveSensor";
+import ECGWaveform from "./ECGWaveform";
 
 const scanFeedLines = [
   "Left ventricle wall: 11mm — normal",
@@ -32,6 +33,7 @@ const Heart3D = ({ scanning = false }: { scanning?: boolean }) => {
     { key: "co", label: "CO", unit: "L/min", base: 5.2, min: 4.0, max: 8.0, noise: 0.15, drift: 0.3, driftPeriod: 10, decimals: 2 },
   ], []);
   const { readings, confidence } = useLiveSensor(channels, scanning);
+  const liveBpm = readings.find((r) => r.key === "hr")?.value ?? 72;
 
   useEffect(() => {
     if (!scanning) return;
@@ -132,24 +134,26 @@ const Heart3D = ({ scanning = false }: { scanning?: boolean }) => {
         </div>
       )}
 
-      {/* ECG waveform overlay */}
+      {/* Holographic shimmer sweep */}
       {scanning && (
-        <div className="absolute top-1/2 left-0 right-0 z-20 pointer-events-none -translate-y-1/2">
-          <svg width="100%" height="40" viewBox="0 0 300 40" preserveAspectRatio="none" className="opacity-30">
-            <path
-              d="M0,20 L30,20 L40,20 L50,15 L55,30 L60,5 L65,35 L70,18 L80,20 L100,20 L110,20 L120,15 L125,30 L130,5 L135,35 L140,18 L150,20 L170,20 L180,20 L190,15 L195,30 L200,5 L205,35 L210,18 L220,20 L240,20 L250,20 L260,15 L265,30 L270,5 L275,35 L280,18 L290,20 L300,20"
-              fill="none"
-              stroke="hsl(0 84% 60%)"
-              strokeWidth="1.5"
-              className="animate-pulse"
-            />
-          </svg>
+        <div className="absolute inset-0 z-[12] pointer-events-none overflow-hidden">
+          <div
+            className="absolute top-0 bottom-0 w-1/3 animate-holo-shimmer"
+            style={{
+              background:
+                "linear-gradient(90deg, transparent, hsl(0 84% 75% / 0.18), transparent)",
+            }}
+          />
         </div>
       )}
 
       {/* Stats */}
       {scanning && (
         <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 z-30">
+          {/* Real-time ECG strip */}
+          <div className="mb-2">
+            <ECGWaveform active={scanning} bpm={liveBpm} color="hsl(0 84% 65%)" height={56} />
+          </div>
           <div className="flex items-center gap-2 mb-2">
             <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
             <span className="font-mono text-[9px] sm:text-[10px] text-red-400">HEART CLONE ACTIVE</span>

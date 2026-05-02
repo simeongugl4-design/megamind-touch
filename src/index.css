@@ -143,6 +143,35 @@
   100% { top: 102%; opacity: 0; }
 }
 
+/* DNA infinite upward stream — replaces spinning behavior */
+@keyframes dna-stream-up {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
+}
+.animate-dna-stream { animation: dna-stream-up 9s linear infinite; will-change: transform; }
+
+/* Holographic shimmer sweep across panels */
+@keyframes holo-shimmer {
+  0%   { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+  35%  { opacity: 0.55; }
+  100% { transform: translateX(220%) skewX(-18deg); opacity: 0; }
+}
+.animate-holo-shimmer { animation: holo-shimmer 3.6s ease-in-out infinite; }
+
+/* Corner bracket pulsing for futuristic feel */
+@keyframes corner-pulse {
+  0%, 100% { opacity: 0.55; box-shadow: 0 0 0 hsl(var(--primary) / 0); }
+  50%      { opacity: 1;    box-shadow: 0 0 12px currentColor; }
+}
+.animate-corner-pulse { animation: corner-pulse 2.2s ease-in-out infinite; }
+
+/* Slow vertical hologram drift highlight */
+@keyframes holo-drift {
+  0%, 100% { background-position: 0% 0%; }
+  50%      { background-position: 0% 100%; }
+}
+.animate-holo-drift { animation: holo-drift 8s ease-in-out infinite; }
+
 .animate-spin-reverse { animation: spin-reverse 12s linear infinite; }
 .animate-radar-sweep { animation: radar-sweep 2.4s linear infinite; transform-origin: center; }
 .animate-orbit-spin { animation: orbit-spin 6s linear infinite; }
