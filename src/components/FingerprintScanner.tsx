@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Fingerprint, Brain, Zap, Sparkles, Dna, HeartPulse, Lock } from "lucide-react";
+import { Fingerprint, Brain, Zap, Sparkles, Dna, HeartPulse, Lock, Activity } from "lucide-react";
 import { useScanFx } from "@/hooks/useScanFx";
 
 const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningChange?: (scanning: boolean) => void; onScanComplete?: () => void }) => {
@@ -11,13 +11,30 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
     onScanningChange?.(v);
   };
   const [progress, setProgress] = useState(0);
-  const [phase, setPhase] = useState<"idle" | "dermal" | "neural" | "dna" | "cardiac" | "cloning" | "complete">("idle");
+  const [phase, setPhase] = useState<"idle" | "calibrating" | "dermal" | "neural" | "dna" | "cardiac" | "cloning" | "complete">("idle");
+  // Pre-scan calibration state
+  const CALIBRATION_MS = 3000;
+  const [calibrating, setCalibrating] = useState(false);
+  const [calibProgress, setCalibProgress] = useState(0);
+  const [calibMetrics, setCalibMetrics] = useState({
+    snr: 0,        // dB, higher is better (target ≥ 35)
+    drift: 1.0,    // mV/s, lower is better (target ≤ 0.05)
+    alignment: 0,  // %, higher is better
+    confidence: 0, // %, overall quality
+  });
+  const [calibReport, setCalibReport] = useState<null | {
+    grade: "A+" | "A" | "B" | "C";
+    snr: number;
+    drift: number;
+    alignment: number;
+    confidence: number;
+  }>(null);
   // Lockout: blocks restart while scanning OR during post-scan cooldown
   const COOLDOWN_MS = 5000;
   const [cooldownLeft, setCooldownLeft] = useState(0);
   const [denied, setDenied] = useState(false);
   const cooldownUntilRef = useRef(0);
-  const locked = scanning || cooldownLeft > 0;
+  const locked = scanning || calibrating || cooldownLeft > 0;
   // Layer scanner-side FX matching the active phase
   const fxProfile = phase === "cardiac" ? "heart" : phase === "dna" ? "dna" : "brain";
   useScanFx(scanning && phase !== "complete", fxProfile as "dna" | "brain" | "heart");
@@ -64,6 +81,60 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
       setParticles([]);
     }
   }, [scanning]);
+
+  // Pre-scan CALIBRATION sweep — runs before the 10s acquisition.
+  // Streams synthetic SNR / drift / alignment metrics that converge toward
+  // hospital-grade targets, then publishes a calibration report and starts
+  // the real scan. UI is locked out during this phase.
+  useEffect(() => {
+    if (!calibrating) return;
+    setPhase("calibrating");
+    setCalibProgress(0);
+    setCalibReport(null);
+    setCalibMetrics({ snr: 12, drift: 0.85, alignment: 32, confidence: 0 });
+
+    const start = performance.now();
+    const id = window.setInterval(() => {
+      const elapsed = performance.now() - start;
+      const t = Math.min(1, elapsed / CALIBRATION_MS);
+      // Eased convergence toward clinical targets with small jitter
+      const ease = 1 - Math.pow(1 - t, 2.2);
+      const snr = 12 + ease * 26 + (Math.random() - 0.5) * 0.6;        // → ~38 dB
+      const drift = 0.85 - ease * 0.81 + (Math.random() - 0.5) * 0.01;  // → ~0.04 mV/s
+      const alignment = 32 + ease * 67 + (Math.random() - 0.5) * 0.4;   // → ~99 %
+      // Composite calibration confidence — weighted blend of normalized metrics
+      const snrScore = Math.min(1, Math.max(0, (snr - 15) / 25));
+      const driftScore = Math.min(1, Math.max(0, (0.85 - drift) / 0.8));
+      const alignScore = Math.min(1, Math.max(0, (alignment - 30) / 65));
+      const confidence = (snrScore * 0.4 + driftScore * 0.3 + alignScore * 0.3) * 100;
+      setCalibProgress(t * 100);
+      setCalibMetrics({ snr, drift: Math.max(0.02, drift), alignment, confidence });
+
+      if (t >= 1) {
+        window.clearInterval(id);
+        const finalConf = confidence;
+        const grade: "A+" | "A" | "B" | "C" =
+          finalConf >= 95 ? "A+" : finalConf >= 88 ? "A" : finalConf >= 75 ? "B" : "C";
+        setCalibReport({
+          grade,
+          snr,
+          drift: Math.max(0.02, drift),
+          alignment,
+          confidence: finalConf,
+        });
+        if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+          navigator.vibrate([20, 30, 20]);
+        }
+        // Brief hold so the user reads the calibration result, then start scan
+        window.setTimeout(() => {
+          setCalibrating(false);
+          setScanning(true);
+        }, 700);
+      }
+    }, 60);
+
+    return () => window.clearInterval(id);
+  }, [calibrating]);
 
   useEffect(() => {
     if (!scanning) return;
@@ -129,11 +200,13 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
       window.setTimeout(() => setDenied(false), 450);
       return;
     }
-    setScanning(true);
+    // Run pre-scan calibration first; the calibration effect will hand off to scanning
+    setCalibrating(true);
   };
 
   const phaseConfig: Record<string, { color: string; label: string; icon: typeof Fingerprint; glow: string }> = {
     idle: { color: "hsl(180,100%,50%)", label: "Touch to Begin Scan", icon: Fingerprint, glow: "" },
+    calibrating: { color: "hsl(45,100%,55%)", label: "Calibrating Sensors...", icon: Activity, glow: "" },
     dermal: { color: "hsl(180,100%,50%)", label: "Scanning Dermal Patterns...", icon: Fingerprint, glow: "box-glow-cyan" },
     neural: { color: "hsl(270,80%,65%)", label: "Mapping Neural Pathways...", icon: Brain, glow: "box-glow-purple" },
     dna: { color: "hsl(140,70%,50%)", label: "Extracting DNA Sequence...", icon: Dna, glow: "" },
