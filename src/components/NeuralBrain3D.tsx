@@ -90,6 +90,19 @@ const NeuralBrain3D = ({ scanning = false }: { scanning?: boolean }) => {
         />
       )}
 
+      {/* Holographic shimmer sweep */}
+      {scanning && (
+        <div className="absolute inset-0 z-[12] pointer-events-none overflow-hidden">
+          <div
+            className="absolute top-0 bottom-0 w-1/3 animate-holo-shimmer"
+            style={{
+              background:
+                "linear-gradient(90deg, transparent, hsl(180 100% 70% / 0.18), transparent)",
+            }}
+          />
+        </div>
+      )}
+
       {/* Corner brackets */}
       <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-primary/60 z-20" />
       <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-primary/60 z-20" />
