@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Fingerprint, Brain, Zap, Sparkles, Dna, HeartPulse, Lock } from "lucide-react";
+import { Fingerprint, Brain, Zap, Sparkles, Dna, HeartPulse, Lock, Activity } from "lucide-react";
 import { useScanFx } from "@/hooks/useScanFx";
 
 const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningChange?: (scanning: boolean) => void; onScanComplete?: () => void }) => {
@@ -11,13 +11,30 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
     onScanningChange?.(v);
   };
   const [progress, setProgress] = useState(0);
-  const [phase, setPhase] = useState<"idle" | "dermal" | "neural" | "dna" | "cardiac" | "cloning" | "complete">("idle");
+  const [phase, setPhase] = useState<"idle" | "calibrating" | "dermal" | "neural" | "dna" | "cardiac" | "cloning" | "complete">("idle");
+  // Pre-scan calibration state
+  const CALIBRATION_MS = 3000;
+  const [calibrating, setCalibrating] = useState(false);
+  const [calibProgress, setCalibProgress] = useState(0);
+  const [calibMetrics, setCalibMetrics] = useState({
+    snr: 0,        // dB, higher is better (target ≥ 35)
+    drift: 1.0,    // mV/s, lower is better (target ≤ 0.05)
+    alignment: 0,  // %, higher is better
+    confidence: 0, // %, overall quality
+  });
+  const [calibReport, setCalibReport] = useState<null | {
+    grade: "A+" | "A" | "B" | "C";
+    snr: number;
+    drift: number;
+    alignment: number;
+    confidence: number;
+  }>(null);
   // Lockout: blocks restart while scanning OR during post-scan cooldown
   const COOLDOWN_MS = 5000;
   const [cooldownLeft, setCooldownLeft] = useState(0);
   const [denied, setDenied] = useState(false);
   const cooldownUntilRef = useRef(0);
-  const locked = scanning || cooldownLeft > 0;
+  const locked = scanning || calibrating || cooldownLeft > 0;
   // Layer scanner-side FX matching the active phase
   const fxProfile = phase === "cardiac" ? "heart" : phase === "dna" ? "dna" : "brain";
   useScanFx(scanning && phase !== "complete", fxProfile as "dna" | "brain" | "heart");
@@ -64,6 +81,60 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
       setParticles([]);
     }
   }, [scanning]);
+
+  // Pre-scan CALIBRATION sweep — runs before the 10s acquisition.
+  // Streams synthetic SNR / drift / alignment metrics that converge toward
+  // hospital-grade targets, then publishes a calibration report and starts
+  // the real scan. UI is locked out during this phase.
+  useEffect(() => {
+    if (!calibrating) return;
+    setPhase("calibrating");
+    setCalibProgress(0);
+    setCalibReport(null);
+    setCalibMetrics({ snr: 12, drift: 0.85, alignment: 32, confidence: 0 });
+
+    const start = performance.now();
+    const id = window.setInterval(() => {
+      const elapsed = performance.now() - start;
+      const t = Math.min(1, elapsed / CALIBRATION_MS);
+      // Eased convergence toward clinical targets with small jitter
+      const ease = 1 - Math.pow(1 - t, 2.2);
+      const snr = 12 + ease * 26 + (Math.random() - 0.5) * 0.6;        // → ~38 dB
+      const drift = 0.85 - ease * 0.81 + (Math.random() - 0.5) * 0.01;  // → ~0.04 mV/s
+      const alignment = 32 + ease * 67 + (Math.random() - 0.5) * 0.4;   // → ~99 %
+      // Composite calibration confidence — weighted blend of normalized metrics
+      const snrScore = Math.min(1, Math.max(0, (snr - 15) / 25));
+      const driftScore = Math.min(1, Math.max(0, (0.85 - drift) / 0.8));
+      const alignScore = Math.min(1, Math.max(0, (alignment - 30) / 65));
+      const confidence = (snrScore * 0.4 + driftScore * 0.3 + alignScore * 0.3) * 100;
+      setCalibProgress(t * 100);
+      setCalibMetrics({ snr, drift: Math.max(0.02, drift), alignment, confidence });
+
+      if (t >= 1) {
+        window.clearInterval(id);
+        const finalConf = confidence;
+        const grade: "A+" | "A" | "B" | "C" =
+          finalConf >= 95 ? "A+" : finalConf >= 88 ? "A" : finalConf >= 75 ? "B" : "C";
+        setCalibReport({
+          grade,
+          snr,
+          drift: Math.max(0.02, drift),
+          alignment,
+          confidence: finalConf,
+        });
+        if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+          navigator.vibrate([20, 30, 20]);
+        }
+        // Brief hold so the user reads the calibration result, then start scan
+        window.setTimeout(() => {
+          setCalibrating(false);
+          setScanning(true);
+        }, 700);
+      }
+    }, 60);
+
+    return () => window.clearInterval(id);
+  }, [calibrating]);
 
   useEffect(() => {
     if (!scanning) return;
@@ -129,11 +200,13 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
       window.setTimeout(() => setDenied(false), 450);
       return;
     }
-    setScanning(true);
+    // Run pre-scan calibration first; the calibration effect will hand off to scanning
+    setCalibrating(true);
   };
 
   const phaseConfig: Record<string, { color: string; label: string; icon: typeof Fingerprint; glow: string }> = {
     idle: { color: "hsl(180,100%,50%)", label: "Touch to Begin Scan", icon: Fingerprint, glow: "" },
+    calibrating: { color: "hsl(45,100%,55%)", label: "Calibrating Sensors...", icon: Activity, glow: "" },
     dermal: { color: "hsl(180,100%,50%)", label: "Scanning Dermal Patterns...", icon: Fingerprint, glow: "box-glow-cyan" },
     neural: { color: "hsl(270,80%,65%)", label: "Mapping Neural Pathways...", icon: Brain, glow: "box-glow-purple" },
     dna: { color: "hsl(140,70%,50%)", label: "Extracting DNA Sequence...", icon: Dna, glow: "" },
@@ -241,8 +314,18 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
             </div>
           )}
 
+          {/* Calibration ring sweep */}
+          {calibrating && (
+            <div className="absolute inset-0 overflow-hidden rounded-full">
+              <div
+                className="w-full h-1.5 animate-scan-line"
+                style={{ background: "linear-gradient(to right, transparent, hsl(45,100%,55%), transparent)" }}
+              />
+            </div>
+          )}
+
           {/* Icon */}
-          <div className={`transition-all duration-500 ${scanning ? "animate-pulse-glow" : ""}`}>
+          <div className={`transition-all duration-500 ${scanning || calibrating ? "animate-pulse-glow" : ""}`}>
             <PhaseIcon className="w-16 h-16" style={{ color: cfg.color }} />
           </div>
 
@@ -256,7 +339,7 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
               strokeWidth="4"
               strokeLinecap="round"
               strokeDasharray={`${2 * Math.PI * 98}`}
-              strokeDashoffset={`${2 * Math.PI * 98 * (1 - progress / 100)}`}
+              strokeDashoffset={`${2 * Math.PI * 98 * (1 - (calibrating ? calibProgress : progress) / 100)}`}
               className="transition-all duration-100"
               style={{ filter: `drop-shadow(0 0 6px ${cfg.color})` }}
             />
@@ -283,6 +366,62 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
             ⚠ Scanner locked — wait for current cycle to finish
           </p>
         )}
+
+        {/* Pre-scan calibration live readout */}
+        {calibrating && (
+          <div className="mt-3 max-w-[280px] mx-auto rounded-lg border border-amber-400/30 bg-amber-400/5 p-2.5 animate-fade-in">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="font-mono text-[9px] uppercase tracking-wider text-amber-300/90">
+                Calibration · {calibProgress.toFixed(0)}%
+              </span>
+              <span className="font-mono text-[9px] text-amber-300/70 tabular-nums">
+                Confidence {calibMetrics.confidence.toFixed(1)}%
+              </span>
+            </div>
+            <div className="h-1 mb-2 rounded-full bg-background/60 overflow-hidden">
+              <div
+                className="h-full transition-[width] duration-100 ease-linear"
+                style={{
+                  width: `${calibProgress}%`,
+                  background: "linear-gradient(90deg, hsl(45,100%,55%), hsl(120,80%,55%))",
+                  boxShadow: "0 0 8px hsl(45,100%,55%,0.6)",
+                }}
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-1.5">
+              {[
+                { label: "SNR", value: calibMetrics.snr.toFixed(1), unit: "dB" },
+                { label: "Drift", value: calibMetrics.drift.toFixed(2), unit: "mV/s" },
+                { label: "Align", value: calibMetrics.alignment.toFixed(1), unit: "%" },
+              ].map((m) => (
+                <div key={m.label} className="rounded bg-background/60 border border-amber-400/20 px-1.5 py-1">
+                  <p className="font-mono text-[7px] uppercase text-muted-foreground">{m.label}</p>
+                  <p className="font-orbitron text-[10px] font-bold text-amber-300 tabular-nums">
+                    {m.value}<span className="text-[7px] text-muted-foreground ml-0.5">{m.unit}</span>
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Calibration result handoff */}
+        {calibReport && (
+          <div className="mt-2 max-w-[280px] mx-auto rounded-lg border border-green-400/40 bg-green-400/5 p-2 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <span className="font-orbitron text-[10px] tracking-widest uppercase text-green-300">
+                Calibration {calibReport.grade} · {calibReport.confidence.toFixed(1)}%
+              </span>
+              <span className="font-mono text-[9px] text-green-300/80 tabular-nums">
+                SNR {calibReport.snr.toFixed(1)}dB · Drift {calibReport.drift.toFixed(2)}
+              </span>
+            </div>
+            <p className="font-mono text-[9px] text-green-300/70 mt-0.5">
+              Sensors locked — initiating 10s acquisition...
+            </p>
+          </div>
+        )}
+
         {scanning && (
           <div className="space-y-1">
             <p className="font-mono text-xs text-muted-foreground">
