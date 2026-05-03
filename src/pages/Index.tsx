@@ -65,6 +65,12 @@ const Index = () => {
             <p className="text-muted-foreground max-w-2xl mx-auto leading-relaxed text-sm sm:text-base">
               MegaMind reads neural patterns, extracts DNA from epithelial cells, and analyzes cardiac signatures through fingerprint contact — mapping your complete biological architecture in real-time.
             </p>
+            <div className="inline-flex items-start gap-2 max-w-2xl mx-auto px-3 py-2 rounded-md border border-yellow-500/30 bg-yellow-500/5 text-left">
+              <Shield className="w-3.5 h-3.5 text-yellow-400 mt-0.5 shrink-0" />
+              <p className="font-mono text-[10px] sm:text-[11px] text-yellow-200/80 leading-relaxed">
+                <span className="text-yellow-300 font-semibold">TRANSPARENCY NOTICE:</span> This is a research-grade simulation & visualization demo. Values shown are physiologically plausible synthetic data — not a medical diagnosis. Not a substitute for professional clinical evaluation.
+              </p>
+            </div>
           </div>
         </section>
 
