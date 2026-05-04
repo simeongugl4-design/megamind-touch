@@ -13,11 +13,14 @@ import DNAAnalysisResults from "@/components/DNAAnalysisResults";
 import HeartAnalysisResults from "@/components/HeartAnalysisResults";
 import ReportExport from "@/components/ReportExport";
 import BrainChatbot from "@/components/BrainChatbot";
+import PatientIntakeForm, { type PatientInfo } from "@/components/PatientIntakeForm";
+import LiveDashboard from "@/components/LiveDashboard";
 import { Shield, Zap, Layers, Dna, Heart, Brain } from "lucide-react";
 
 const Index = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [scanComplete, setScanComplete] = useState(false);
+  const [patient, setPatient] = useState<PatientInfo | null>(null);
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -78,7 +81,21 @@ const Index = () => {
                 <h3 className="font-orbitron text-xs sm:text-sm tracking-widest uppercase text-secondary text-center mb-6">
                   Neural Fingerprint Scanner
                 </h3>
-                <FingerprintScanner onScanningChange={setIsScanning} onScanComplete={() => setScanComplete(true)} />
+                {patient ? (
+                  <FingerprintScanner
+                    onScanningChange={setIsScanning}
+                    onScanComplete={() => setScanComplete(true)}
+                  />
+                ) : (
+                  <div className="text-center space-y-2 px-4">
+                    <p className="font-orbitron text-xs tracking-widest uppercase text-amber-300">
+                      Intake Required
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Complete patient & clinician details below to unlock the scanner.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* 3D Brain */}
@@ -119,6 +136,12 @@ const Index = () => {
           </div>
         </section>
 
+        {/* Patient & Doctor Intake (gates the scanner) */}
+        <PatientIntakeForm onSubmit={setPatient} current={patient} locked={isScanning} />
+
+        {/* Live Dashboard with drill-downs */}
+        <LiveDashboard scanning={isScanning} scanComplete={scanComplete} />
+
         {/* Brain Analysis Results */}
         <BrainAnalysisResults visible={scanComplete} />
 
@@ -129,7 +152,7 @@ const Index = () => {
         <HeartAnalysisResults visible={scanComplete} />
 
         {/* Report Export */}
-        <ReportExport visible={scanComplete} />
+        <ReportExport visible={scanComplete} patient={patient} />
 
         {/* Stats */}
         <section className="px-4 sm:px-6 lg:px-12 pb-16">
