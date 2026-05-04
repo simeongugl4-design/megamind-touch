@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Activity, Brain, Dna, HeartPulse, Gauge, TrendingUp } from "lucide-react";
+import { Activity, Brain, Dna, HeartPulse, Gauge, TrendingUp, AlertTriangle, Wind, Thermometer, Droplet } from "lucide-react";
 
 type Sample = { t: number; conf: number; snr: number; drift: number; align: number };
 type TabKey = "overview" | "ecg" | "eeg" | "dna";
@@ -9,6 +9,8 @@ const MAX_POINTS = 120;
 const LiveDashboard = ({ scanning, scanComplete }: { scanning: boolean; scanComplete: boolean }) => {
   const [tab, setTab] = useState<TabKey>("overview");
   const [samples, setSamples] = useState<Sample[]>([]);
+  const [anomalies, setAnomalies] = useState<{ t: number; sev: "info" | "warning" | "critical"; msg: string }[]>([]);
+  const [vitals, setVitals] = useState({ hr: 72, spo2: 98, sys: 120, dia: 80, resp: 14, temp: 36.8 });
   const startRef = useRef<number>(0);
   const rafRef = useRef<number>(0);
   const ecgRef = useRef<HTMLCanvasElement>(null);
@@ -20,6 +22,7 @@ const LiveDashboard = ({ scanning, scanComplete }: { scanning: boolean; scanComp
     if (!scanning) return;
     startRef.current = performance.now();
     setSamples([]);
+    setAnomalies([]);
     const id = window.setInterval(() => {
       const t = (performance.now() - startRef.current) / 1000;
       const inCalib = t < 3;
@@ -30,7 +33,24 @@ const LiveDashboard = ({ scanning, scanComplete }: { scanning: boolean; scanComp
         ? (t / 3) * 70 + Math.random() * 2
         : Math.min(99.97, 70 + (1 - Math.exp(-(t - 3) / 3)) * 29.7);
       setSamples((s) => [...s, { t, conf, snr, drift, align }].slice(-MAX_POINTS));
+      // Live vitals jitter
+      setVitals((v) => ({
+        hr: clamp(72 + Math.sin(t * 1.1) * 3 + (Math.random() - 0.5) * 1.5, 55, 110),
+        spo2: clamp(98 + (Math.random() - 0.5) * 0.6, 94, 100),
+        sys: clamp(120 + Math.sin(t * 0.6) * 4 + (Math.random() - 0.5), 100, 140),
+        dia: clamp(80 + Math.sin(t * 0.7) * 3 + (Math.random() - 0.5), 65, 95),
+        resp: clamp(14 + Math.sin(t * 0.4) * 1.2, 10, 22),
+        temp: clamp(36.8 + Math.sin(t * 0.2) * 0.15, 36.2, 37.4),
+      }));
+      // Synthetic anomaly events at meaningful checkpoints
+      if (Math.abs(t - 3) < 0.07) push({ t, sev: "info", msg: "Calibration locked · handoff to acquisition" });
+      if (Math.abs(t - 6) < 0.07) push({ t, sev: "info", msg: "Sinus rhythm confirmed · QRS 88ms" });
+      if (Math.abs(t - 9) < 0.07) push({ t, sev: "warning", msg: "Transient T-wave variance · within tolerance" });
+      if (Math.abs(t - 12) < 0.07) push({ t, sev: "info", msg: "Final confidence ≥ 99.9% · scan complete" });
     }, 120);
+    function push(a: { t: number; sev: "info" | "warning" | "critical"; msg: string }) {
+      setAnomalies((prev) => [...prev, a].slice(-6));
+    }
     return () => window.clearInterval(id);
   }, [scanning]);
 
@@ -82,6 +102,16 @@ const LiveDashboard = ({ scanning, scanComplete }: { scanning: boolean; scanComp
           <Kpi label="Alignment" value={last ? `${last.align.toFixed(1)}%` : "—"} accent="text-green-400" />
         </div>
 
+        {/* Vital Signs strip */}
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 px-5 py-3 border-b border-border/50">
+          <Vital icon={HeartPulse} label="HR" value={`${vitals.hr.toFixed(0)} bpm`} tint="text-rose-400" />
+          <Vital icon={Droplet} label="SpO₂" value={`${vitals.spo2.toFixed(0)}%`} tint="text-cyan-400" />
+          <Vital icon={Activity} label="BP" value={`${vitals.sys.toFixed(0)}/${vitals.dia.toFixed(0)}`} tint="text-violet-300" />
+          <Vital icon={Wind} label="Resp" value={`${vitals.resp.toFixed(0)}/min`} tint="text-emerald-300" />
+          <Vital icon={Thermometer} label="Temp" value={`${vitals.temp.toFixed(1)}°C`} tint="text-amber-300" />
+          <Vital icon={Gauge} label="HRV" value={`62 ms`} tint="text-primary" />
+        </div>
+
         {/* Tabs */}
         <div className="flex flex-wrap items-center gap-1 px-3 pt-3">
           {([
@@ -121,6 +151,33 @@ const LiveDashboard = ({ scanning, scanComplete }: { scanning: boolean; scanComp
               </ChartCard>
               <MiniCanvas refEl={ecgRef} title="ECG Stream" tint="hsl(0,80%,55%)" />
               <MiniCanvas refEl={eegRef} title="EEG Stream" tint="hsl(270,80%,65%)" />
+              <div className="lg:col-span-2 rounded-lg border border-border bg-background/40 p-3">
+                <p className="font-orbitron text-[10px] tracking-wider uppercase text-foreground mb-2 flex items-center gap-1.5">
+                  <AlertTriangle className="w-3 h-3 text-amber-300" /> Live Event Feed
+                </p>
+                {anomalies.length === 0 ? (
+                  <p className="font-mono text-[10px] text-muted-foreground">No events yet — start a scan.</p>
+                ) : (
+                  <ul className="space-y-1">
+                    {anomalies.slice().reverse().map((a, i) => (
+                      <li
+                        key={i}
+                        className={`flex items-center gap-2 font-mono text-[10px] px-2 py-1 rounded ${
+                          a.sev === "critical"
+                            ? "bg-destructive/10 text-destructive"
+                            : a.sev === "warning"
+                            ? "bg-amber-400/10 text-amber-300"
+                            : "bg-primary/10 text-primary"
+                        }`}
+                      >
+                        <span className="opacity-60 tabular-nums">t+{a.t.toFixed(1)}s</span>
+                        <span>›</span>
+                        <span className="text-foreground/90">{a.msg}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           )}
           {tab === "ecg" && (
@@ -152,6 +209,30 @@ const LiveDashboard = ({ scanning, scanComplete }: { scanning: boolean; scanComp
     </section>
   );
 };
+
+function clamp(v: number, lo: number, hi: number) {
+  return Math.max(lo, Math.min(hi, v));
+}
+
+const Vital = ({
+  icon: Icon,
+  label,
+  value,
+  tint,
+}: {
+  icon: typeof Activity;
+  label: string;
+  value: string;
+  tint: string;
+}) => (
+  <div className="flex items-center gap-2 rounded-md border border-border bg-background/40 px-2.5 py-1.5">
+    <Icon className={`w-3.5 h-3.5 ${tint}`} />
+    <div className="leading-tight">
+      <p className="font-mono text-[8px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className={`font-orbitron text-[11px] font-bold tabular-nums ${tint}`}>{value}</p>
+    </div>
+  </div>
+);
 
 /* ---------- subcomponents ---------- */
 
