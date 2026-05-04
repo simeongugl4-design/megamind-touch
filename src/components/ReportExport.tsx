@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Download, FileText, Loader2 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import type { PatientInfo } from "./PatientIntakeForm";
 
 const cognitiveMetrics = [
   ["IQ Estimate (WAIS-equiv.)", "142", "85-145", "High"],
@@ -285,12 +286,21 @@ function drawConfidenceTrend(doc: jsPDF, x: number, y: number, w: number, h: num
 }
 
 // Main builder ----------------------------------------------------------
-function buildPDF(): jsPDF {
+function calcAge(dob: string): string {
+  if (!dob) return "—";
+  const d = new Date(dob);
+  if (isNaN(d.getTime())) return "—";
+  const diff = Date.now() - d.getTime();
+  const age = Math.floor(diff / (365.25 * 24 * 3600 * 1000));
+  return `${age} y`;
+}
+
+function buildPDF(patient: PatientInfo | null): jsPDF {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const now = new Date();
   const reportId = `MM-${now.getTime().toString(36).toUpperCase()}`;
   const sessionId = `SES-${pad(now.getFullYear() % 100)}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
-  const patientId = `PT-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+  const patientId = patient?.patientId || `PT-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
   // ========= COVER =========
   doc.setFillColor(15, 23, 42);
@@ -314,10 +324,42 @@ function buildPDF(): jsPDF {
   doc.text(`Patient: ${patientId}`, metaX, 28, { align: "right" });
   doc.text(`Generated: ${now.toLocaleString()}`, metaX, 33, { align: "right" });
   doc.text(`Device: MM-Scanner v4.0  •  FW 4.2.1`, metaX, 38, { align: "right" });
-  doc.text(`Operator: SYSTEM-AUTO`, metaX, 43, { align: "right" });
+  doc.text(`Operator: ${patient?.doctorName || "SYSTEM-AUTO"}`, metaX, 43, { align: "right" });
+
+  // ===== Patient & Clinician identity panel =====
+  let y = 66;
+  doc.setDrawColor(...C.line);
+  doc.setFillColor(255, 255, 255);
+  doc.roundedRect(14, y, 182, 30, 2, 2, "FD");
+  // left: patient
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(...C.primary);
+  doc.text("PATIENT", 18, y + 6);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...C.text);
+  const pName = patient?.patientName || "—";
+  const pDob = patient?.dob || "—";
+  const pSex = patient?.sex || "—";
+  const pContact = patient?.contact || "—";
+  doc.text(`Name: ${pName}`, 18, y + 12);
+  doc.text(`DOB: ${pDob}   (Age ${calcAge(patient?.dob || "")})   Sex: ${pSex}`, 18, y + 18);
+  doc.text(`MRN: ${patientId}    Contact: ${pContact}`, 18, y + 24);
+  // right: clinician
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(...C.heart);
+  doc.text("ATTENDING CLINICIAN", 110, y + 6);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...C.text);
+  doc.text(`Dr.: ${patient?.doctorName || "—"}`, 110, y + 12);
+  doc.text(`Position: ${patient?.doctorPosition || "—"}`, 110, y + 18);
+  doc.text(`License: ${patient?.doctorLicense || "—"}    Facility: ${patient?.facility || "—"}`, 110, y + 24);
+  y += 36;
 
   // Summary panel
-  let y = 70;
   doc.setFillColor(...C.bgSoft);
   doc.roundedRect(14, y, 182, 36, 2, 2, "F");
   doc.setTextColor(...C.text);
@@ -552,8 +594,18 @@ function buildPDF(): jsPDF {
   doc.line(110, y + 18, 196, y + 18);
   doc.setFontSize(8);
   doc.setTextColor(...C.muted);
-  doc.text("Reviewing Clinician (Signature & Date)", 14, y + 22);
-  doc.text("Reviewed By (Name, Credentials)", 110, y + 22);
+  doc.text(
+    patient?.doctorName
+      ? `${patient.doctorName} — ${patient.doctorPosition || ""}`
+      : "Reviewing Clinician (Signature & Date)",
+    14,
+    y + 22,
+  );
+  doc.text(
+    patient?.doctorLicense ? `License #: ${patient.doctorLicense}` : "Reviewed By (Name, Credentials)",
+    110,
+    y + 22,
+  );
 
   // Disclaimer
   y += 32;
@@ -591,14 +643,15 @@ function buildPDF(): jsPDF {
   return doc;
 }
 
-const ReportExport = ({ visible }: { visible: boolean }) => {
+const ReportExport = ({ visible, patient }: { visible: boolean; patient: PatientInfo | null }) => {
   const [exporting, setExporting] = useState(false);
 
   const exportPDF = async () => {
     setExporting(true);
     try {
-      const doc = buildPDF();
-      doc.save(`MegaMind-Scan-Report-${Date.now()}.pdf`);
+      const doc = buildPDF(patient);
+      const safeName = (patient?.patientName || "Patient").replace(/[^a-z0-9]+/gi, "_");
+      doc.save(`MegaMind-Report-${safeName}-${Date.now()}.pdf`);
     } finally {
       setTimeout(() => setExporting(false), 800);
     }

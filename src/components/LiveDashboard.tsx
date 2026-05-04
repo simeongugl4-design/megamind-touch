@@ -1,0 +1,413 @@
+import { useEffect, useRef, useState } from "react";
+import { Activity, Brain, Dna, HeartPulse, Gauge, TrendingUp } from "lucide-react";
+
+type Sample = { t: number; conf: number; snr: number; drift: number; align: number };
+type TabKey = "overview" | "ecg" | "eeg" | "dna";
+
+const MAX_POINTS = 120;
+
+const LiveDashboard = ({ scanning, scanComplete }: { scanning: boolean; scanComplete: boolean }) => {
+  const [tab, setTab] = useState<TabKey>("overview");
+  const [samples, setSamples] = useState<Sample[]>([]);
+  const startRef = useRef<number>(0);
+  const rafRef = useRef<number>(0);
+  const ecgRef = useRef<HTMLCanvasElement>(null);
+  const eegRef = useRef<HTMLCanvasElement>(null);
+  const dnaRef = useRef<HTMLCanvasElement>(null);
+
+  // Trend collection
+  useEffect(() => {
+    if (!scanning) return;
+    startRef.current = performance.now();
+    setSamples([]);
+    const id = window.setInterval(() => {
+      const t = (performance.now() - startRef.current) / 1000;
+      const inCalib = t < 3;
+      const snr = inCalib ? 12 + (t / 3) * 26 + (Math.random() - 0.5) : 38 + Math.sin(t * 1.2) * 1.5;
+      const drift = inCalib ? 0.85 - (t / 3) * 0.81 : 0.04 + Math.random() * 0.01;
+      const align = inCalib ? 32 + (t / 3) * 67 : 99 + Math.sin(t) * 0.4;
+      const conf = inCalib
+        ? (t / 3) * 70 + Math.random() * 2
+        : Math.min(99.97, 70 + (1 - Math.exp(-(t - 3) / 3)) * 29.7);
+      setSamples((s) => [...s, { t, conf, snr, drift, align }].slice(-MAX_POINTS));
+    }, 120);
+    return () => window.clearInterval(id);
+  }, [scanning]);
+
+  // Drill-down canvases
+  useEffect(() => {
+    cancelAnimationFrame(rafRef.current);
+    if (!scanning && !scanComplete) return;
+    const draw = () => {
+      const t = performance.now() / 1000;
+      if (tab === "ecg" || tab === "overview") drawECG(ecgRef.current, t);
+      if (tab === "eeg" || tab === "overview") drawEEG(eegRef.current, t);
+      if (tab === "dna" || tab === "overview") drawDNA(dnaRef.current, t);
+      rafRef.current = requestAnimationFrame(draw);
+    };
+    rafRef.current = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [tab, scanning, scanComplete]);
+
+  const last = samples[samples.length - 1];
+
+  return (
+    <section className="px-4 sm:px-6 lg:px-12 pb-8">
+      <div className="max-w-7xl mx-auto rounded-xl border border-primary/20 bg-card/40 backdrop-blur-sm">
+        {/* Header */}
+        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-center">
+              <Gauge className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-orbitron text-sm font-bold tracking-wider uppercase">
+                Live Clinical Dashboard
+              </h3>
+              <p className="text-[11px] text-muted-foreground">
+                Real-time calibration, confidence trend & modality drill-down
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <StatusDot active={scanning} done={scanComplete} />
+          </div>
+        </div>
+
+        {/* KPI strip */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-5 py-4 border-b border-border/50">
+          <Kpi label="Confidence" value={last ? `${last.conf.toFixed(1)}%` : "—"} accent="text-primary" />
+          <Kpi label="SNR" value={last ? `${last.snr.toFixed(1)} dB` : "—"} accent="text-secondary" />
+          <Kpi label="Drift" value={last ? `${last.drift.toFixed(2)} mV/s` : "—"} accent="text-amber-300" />
+          <Kpi label="Alignment" value={last ? `${last.align.toFixed(1)}%` : "—"} accent="text-green-400" />
+        </div>
+
+        {/* Tabs */}
+        <div className="flex flex-wrap items-center gap-1 px-3 pt-3">
+          {([
+            { k: "overview", label: "Overview", icon: TrendingUp },
+            { k: "ecg", label: "ECG", icon: HeartPulse },
+            { k: "eeg", label: "EEG", icon: Brain },
+            { k: "dna", label: "DNA", icon: Dna },
+          ] as { k: TabKey; label: string; icon: typeof Activity }[]).map((t) => {
+            const Icon = t.icon;
+            const active = tab === t.k;
+            return (
+              <button
+                key={t.k}
+                onClick={() => setTab(t.k)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md font-orbitron text-[10px] tracking-wider uppercase transition-colors ${
+                  active
+                    ? "bg-primary/15 text-primary border border-primary/40"
+                    : "text-muted-foreground hover:text-foreground border border-transparent"
+                }`}
+              >
+                <Icon className="w-3 h-3" />
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Body */}
+        <div className="p-4">
+          {tab === "overview" && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <ChartCard title="Confidence Score Trend" subtitle="Calibration ▒ → Acquisition">
+                <TrendChart samples={samples} field="conf" color="hsl(180,100%,50%)" min={0} max={100} unit="%" />
+              </ChartCard>
+              <ChartCard title="Calibration Quality (SNR)" subtitle="Higher is better">
+                <TrendChart samples={samples} field="snr" color="hsl(45,100%,55%)" min={0} max={45} unit="dB" />
+              </ChartCard>
+              <MiniCanvas refEl={ecgRef} title="ECG Stream" tint="hsl(0,80%,55%)" />
+              <MiniCanvas refEl={eegRef} title="EEG Stream" tint="hsl(270,80%,65%)" />
+            </div>
+          )}
+          {tab === "ecg" && (
+            <DrillCanvas
+              refEl={ecgRef}
+              tint="hsl(0,80%,55%)"
+              title="ECG · Lead II Reconstruction"
+              meta={["25 mm/s", "10 mm/mV", `HR ${last ? 72 : "—"} bpm`, "Sinus rhythm"]}
+            />
+          )}
+          {tab === "eeg" && (
+            <DrillCanvas
+              refEl={eegRef}
+              tint="hsl(270,80%,65%)"
+              title="EEG · 4-Channel Band Map"
+              meta={["Fp1 α 24.7 µV", "Cz β 18.3 µV", "O1 γ 6.1 µV", "T3 θ 12.4 µV"]}
+            />
+          )}
+          {tab === "dna" && (
+            <DrillCanvas
+              refEl={dnaRef}
+              tint="hsl(140,70%,50%)"
+              title="DNA · Sequence Streaming"
+              meta={["GC 50%", "20 bp/window", "Q-score 38", "4.1M SNPs"]}
+            />
+          )}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+/* ---------- subcomponents ---------- */
+
+const StatusDot = ({ active, done }: { active: boolean; done: boolean }) => (
+  <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+    <span
+      className={`w-2 h-2 rounded-full ${
+        active ? "bg-green-400 animate-pulse" : done ? "bg-primary" : "bg-muted-foreground/40"
+      }`}
+      style={{ boxShadow: active ? "0 0 8px hsl(140,70%,50%)" : undefined }}
+    />
+    {active ? "Streaming" : done ? "Snapshot" : "Idle"}
+  </span>
+);
+
+const Kpi = ({ label, value, accent }: { label: string; value: string; accent: string }) => (
+  <div className="rounded-lg border border-border bg-background/40 px-3 py-2">
+    <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">{label}</p>
+    <p className={`font-orbitron text-base font-bold tabular-nums ${accent}`}>{value}</p>
+  </div>
+);
+
+const ChartCard = ({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) => (
+  <div className="rounded-lg border border-border bg-background/40 p-3">
+    <div className="flex items-center justify-between mb-2">
+      <p className="font-orbitron text-[10px] tracking-wider uppercase text-foreground">{title}</p>
+      {subtitle && <p className="font-mono text-[9px] text-muted-foreground">{subtitle}</p>}
+    </div>
+    {children}
+  </div>
+);
+
+const TrendChart = ({
+  samples,
+  field,
+  color,
+  min,
+  max,
+  unit,
+}: {
+  samples: Sample[];
+  field: keyof Sample;
+  color: string;
+  min: number;
+  max: number;
+  unit: string;
+}) => {
+  const w = 320;
+  const h = 100;
+  const path = samples
+    .map((s, i) => {
+      const x = (i / Math.max(1, MAX_POINTS - 1)) * w;
+      const v = (s[field] as number);
+      const y = h - ((v - min) / (max - min)) * h;
+      return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+  const last = samples[samples.length - 1];
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-24">
+      {/* calibration shading: first 3s */}
+      <rect x={0} y={0} width={(3 / 13) * w} height={h} fill="hsl(45,100%,55%)" opacity={0.08} />
+      {[0.25, 0.5, 0.75].map((p) => (
+        <line key={p} x1={0} x2={w} y1={h * p} y2={h * p} stroke="hsl(220,40%,18%)" strokeWidth={0.5} />
+      ))}
+      <path d={path} fill="none" stroke={color} strokeWidth={1.5} style={{ filter: `drop-shadow(0 0 4px ${color})` }} />
+      <text x={w - 4} y={12} textAnchor="end" fill={color} fontSize={10} fontFamily="monospace">
+        {last ? `${(last[field] as number).toFixed(1)} ${unit}` : "—"}
+      </text>
+    </svg>
+  );
+};
+
+const MiniCanvas = ({
+  refEl,
+  title,
+  tint,
+}: {
+  refEl: React.RefObject<HTMLCanvasElement>;
+  title: string;
+  tint: string;
+}) => (
+  <div className="rounded-lg border border-border bg-background/40 p-3">
+    <p className="font-orbitron text-[10px] tracking-wider uppercase mb-2" style={{ color: tint }}>
+      {title}
+    </p>
+    <canvas ref={refEl} width={640} height={140} className="w-full h-24 rounded" />
+  </div>
+);
+
+const DrillCanvas = ({
+  refEl,
+  tint,
+  title,
+  meta,
+}: {
+  refEl: React.RefObject<HTMLCanvasElement>;
+  tint: string;
+  title: string;
+  meta: string[];
+}) => (
+  <div className="rounded-lg border border-border bg-background/40 p-4">
+    <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+      <p className="font-orbitron text-xs tracking-wider uppercase" style={{ color: tint }}>
+        {title}
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        {meta.map((m) => (
+          <span
+            key={m}
+            className="font-mono text-[9px] uppercase px-2 py-0.5 rounded border border-border bg-background/60 text-muted-foreground"
+          >
+            {m}
+          </span>
+        ))}
+      </div>
+    </div>
+    <canvas ref={refEl} width={1200} height={280} className="w-full h-56 rounded" />
+  </div>
+);
+
+/* ---------- canvas drawers ---------- */
+
+function clearGrid(ctx: CanvasRenderingContext2D, w: number, h: number, gridColor: string) {
+  ctx.fillStyle = "hsl(220, 40%, 6%)";
+  ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = gridColor;
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x < w; x += 20) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, h);
+    ctx.stroke();
+  }
+  for (let y = 0; y < h; y += 20) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+  }
+}
+
+function drawECG(canvas: HTMLCanvasElement | null, t: number) {
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  const { width: w, height: h } = canvas;
+  clearGrid(ctx, w, h, "rgba(239,68,68,0.08)");
+  ctx.strokeStyle = "hsl(0,80%,55%)";
+  ctx.lineWidth = 1.8;
+  ctx.shadowColor = "hsl(0,80%,55%)";
+  ctx.shadowBlur = 8;
+  ctx.beginPath();
+  const mid = h / 2;
+  for (let x = 0; x < w; x++) {
+    const phase = ((x + t * 120) % 180) / 180; // beat cycle
+    let y = mid;
+    if (phase < 0.1) y = mid - Math.sin(phase / 0.1 * Math.PI) * 6;       // P
+    else if (phase < 0.18) y = mid;
+    else if (phase < 0.2) y = mid + 6;                                     // Q
+    else if (phase < 0.22) y = mid - h * 0.36;                             // R
+    else if (phase < 0.24) y = mid + 12;                                   // S
+    else if (phase < 0.4) y = mid;
+    else if (phase < 0.55) y = mid - Math.sin((phase - 0.4) / 0.15 * Math.PI) * 14; // T
+    else y = mid + Math.sin(x * 0.05 + t * 4) * 0.6;
+    if (x === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+}
+
+function drawEEG(canvas: HTMLCanvasElement | null, t: number) {
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  const { width: w, height: h } = canvas;
+  clearGrid(ctx, w, h, "rgba(167,139,250,0.08)");
+  const channels = [
+    { color: "hsl(210,100%,65%)", freq: 10, amp: 14, label: "Fp1 α" },
+    { color: "hsl(270,80%,65%)", freq: 22, amp: 9, label: "Cz β" },
+    { color: "hsl(190,100%,60%)", freq: 40, amp: 6, label: "O1 γ" },
+    { color: "hsl(230,80%,65%)", freq: 6, amp: 12, label: "T3 θ" },
+  ];
+  const chH = h / channels.length;
+  channels.forEach((ch, i) => {
+    const baseY = chH * (i + 0.5);
+    ctx.strokeStyle = ch.color;
+    ctx.shadowColor = ch.color;
+    ctx.shadowBlur = 6;
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    for (let x = 0; x < w; x++) {
+      const phase = (x / w) * Math.PI * 2 * ch.freq * 0.5 + t * 4;
+      const y =
+        baseY -
+        Math.sin(phase) * ch.amp -
+        Math.sin(phase * 1.7 + 1.2) * ch.amp * 0.4;
+      if (x === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = ch.color;
+    ctx.font = "10px monospace";
+    ctx.fillText(ch.label, 6, baseY - chH / 2 + 12);
+  });
+}
+
+const BASES = ["A", "T", "G", "C"];
+function drawDNA(canvas: HTMLCanvasElement | null, t: number) {
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  const { width: w, height: h } = canvas;
+  clearGrid(ctx, w, h, "rgba(16,185,129,0.08)");
+  const mid = h / 2;
+  const amp = h / 2 - 30;
+  ctx.lineWidth = 2;
+  // Two backbones
+  for (const sign of [1, -1]) {
+    ctx.strokeStyle = sign > 0 ? "hsl(140,70%,50%)" : "hsl(45,100%,55%)";
+    ctx.shadowColor = ctx.strokeStyle as string;
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    for (let x = 0; x < w; x++) {
+      const y = mid + sign * Math.sin((x + t * 60) * 0.02) * amp;
+      if (x === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  ctx.shadowBlur = 0;
+  // Rungs
+  for (let x = 0; x < w; x += 24) {
+    const y1 = mid + Math.sin((x + t * 60) * 0.02) * amp;
+    const y2 = mid - Math.sin((x + t * 60) * 0.02) * amp;
+    ctx.strokeStyle = "rgba(180,200,220,0.35)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, y1);
+    ctx.lineTo(x, y2);
+    ctx.stroke();
+    const base = BASES[Math.floor((x + t * 60) / 24) % 4];
+    ctx.fillStyle = "hsl(140,70%,75%)";
+    ctx.font = "10px monospace";
+    ctx.fillText(base, x - 3, h - 6);
+  }
+}
+
+export default LiveDashboard;
