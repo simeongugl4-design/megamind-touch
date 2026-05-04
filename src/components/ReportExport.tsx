@@ -3,6 +3,7 @@ import { Download, FileText, Loader2 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { PatientInfo } from "./PatientIntakeForm";
+import type { ClinicalReport } from "./AIInsightsPanel";
 
 const cognitiveMetrics = [
   ["IQ Estimate (WAIS-equiv.)", "142", "85-145", "High"],
@@ -295,7 +296,7 @@ function calcAge(dob: string): string {
   return `${age} y`;
 }
 
-function buildPDF(patient: PatientInfo | null): jsPDF {
+function buildPDF(patient: PatientInfo | null, ai: ClinicalReport | null): jsPDF {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const now = new Date();
   const reportId = `MM-${now.getTime().toString(36).toUpperCase()}`;
@@ -420,6 +421,120 @@ function buildPDF(patient: PatientInfo | null): jsPDF {
     bodyStyles: { fontSize: 8, textColor: C.text },
     margin: { left: 14, right: 14 },
   });
+
+  // ===== AI CLINICAL INTERPRETATION (if available) =====
+  if (ai) {
+    doc.addPage();
+    let ay = 20;
+    ay = sectionHeader(doc, "AI Clinical Interpretation", ay, C.primary);
+
+    // Status + risk badges
+    const statusColor: [number, number, number] =
+      ai.overall_status === "Normal"
+        ? [16, 185, 129]
+        : ai.overall_status === "Borderline"
+        ? [234, 179, 8]
+        : ai.overall_status === "Abnormal"
+        ? [249, 115, 22]
+        : [239, 68, 68];
+    doc.setFillColor(...statusColor);
+    doc.roundedRect(14, ay, 50, 16, 2, 2, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.text("OVERALL STATUS", 17, ay + 5);
+    doc.setFontSize(13);
+    doc.text(ai.overall_status.toUpperCase(), 17, ay + 12);
+
+    doc.setFillColor(...C.bgSoft);
+    doc.roundedRect(68, ay, 50, 16, 2, 2, "F");
+    doc.setTextColor(...C.text);
+    doc.setFontSize(8);
+    doc.text("COMPOSITE RISK", 71, ay + 5);
+    doc.setFontSize(13);
+    doc.text(`${Math.round(ai.risk_score)} / 100`, 71, ay + 12);
+
+    doc.roundedRect(122, ay, 74, 16, 2, 2, "F");
+    doc.setFontSize(8);
+    doc.text("ANOMALIES", 125, ay + 5);
+    doc.setFontSize(13);
+    doc.text(
+      `${ai.anomalies.length} (${ai.anomalies.filter((a) => a.severity === "critical").length} critical · ${ai.anomalies.filter((a) => a.severity === "warning").length} warning)`,
+      125,
+      ay + 12,
+    );
+    ay += 22;
+
+    // Executive summary
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...C.text);
+    doc.text("Executive Summary", 14, ay);
+    ay += 5;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    const summary = doc.splitTextToSize(ai.executive_summary, 182);
+    doc.text(summary, 14, ay);
+    ay += summary.length * 4.5 + 4;
+
+    // Modality findings
+    const modalities: [string, string, [number, number, number]][] = [
+      ["Neural Findings", ai.neural_findings, C.primary],
+      ["Cardiac Findings", ai.cardiac_findings, C.heart],
+      ["Genomic Findings", ai.genomic_findings, C.dna],
+    ];
+    for (const [title, body, color] of modalities) {
+      ay = ensureSpace(doc, ay, 24);
+      doc.setFillColor(color[0], color[1], color[2]);
+      doc.rect(14, ay, 2, 5, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(...C.text);
+      doc.text(title, 18, ay + 4);
+      ay += 6;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      const lines = doc.splitTextToSize(body, 182);
+      doc.text(lines, 14, ay);
+      ay += lines.length * 4.5 + 4;
+    }
+
+    // Anomaly table
+    if (ai.anomalies.length) {
+      ay = ensureSpace(doc, ay, 30);
+      ay = sectionHeader(doc, "Detected Anomalies", ay, C.heart);
+      autoTable(doc, {
+        startY: ay,
+        head: [["Severity", "Finding", "Detail", "ICD-10"]],
+        body: ai.anomalies.map((a) => [a.severity.toUpperCase(), a.label, a.detail, a.icd10 || "—"]),
+        theme: "striped",
+        headStyles: { fillColor: C.heart, textColor: 255, fontSize: 9 },
+        bodyStyles: { fontSize: 8, textColor: C.text },
+        columnStyles: { 0: { cellWidth: 22 }, 3: { cellWidth: 22 } },
+        margin: { left: 14, right: 14 },
+      });
+      // @ts-expect-error
+      ay = doc.lastAutoTable.finalY + 6;
+    }
+
+    // Recommendations
+    ay = ensureSpace(doc, ay, 30);
+    ay = sectionHeader(doc, "AI Recommendations", ay, C.dna);
+    doc.setFontSize(9);
+    doc.setTextColor(...C.text);
+    ai.recommendations.forEach((r, i) => {
+      const lines = doc.splitTextToSize(`${i + 1}. ${r}`, 182);
+      doc.text(lines, 14, ay);
+      ay += lines.length * 4.5 + 1;
+    });
+    ay += 4;
+    ay = ensureSpace(doc, ay, 12);
+    doc.setFont("helvetica", "bold");
+    doc.text("Follow-up:", 14, ay);
+    doc.setFont("helvetica", "normal");
+    const fu = doc.splitTextToSize(ai.follow_up, 168);
+    doc.text(fu, 32, ay);
+  }
 
   // ========= NEURAL =========
   doc.addPage();
@@ -643,13 +758,21 @@ function buildPDF(patient: PatientInfo | null): jsPDF {
   return doc;
 }
 
-const ReportExport = ({ visible, patient }: { visible: boolean; patient: PatientInfo | null }) => {
+const ReportExport = ({
+  visible,
+  patient,
+  aiReport,
+}: {
+  visible: boolean;
+  patient: PatientInfo | null;
+  aiReport: ClinicalReport | null;
+}) => {
   const [exporting, setExporting] = useState(false);
 
   const exportPDF = async () => {
     setExporting(true);
     try {
-      const doc = buildPDF(patient);
+      const doc = buildPDF(patient, aiReport);
       const safeName = (patient?.patientName || "Patient").replace(/[^a-z0-9]+/gi, "_");
       doc.save(`MegaMind-Report-${safeName}-${Date.now()}.pdf`);
     } finally {

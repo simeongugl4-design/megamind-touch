@@ -1,1 +1,4 @@
 project_id = "ghactneadrrvonljnbld"
+
+[functions.clinical-insights]
+verify_jwt = false

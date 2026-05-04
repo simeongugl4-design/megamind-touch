@@ -15,12 +15,14 @@ import ReportExport from "@/components/ReportExport";
 import BrainChatbot from "@/components/BrainChatbot";
 import PatientIntakeForm, { type PatientInfo } from "@/components/PatientIntakeForm";
 import LiveDashboard from "@/components/LiveDashboard";
+import AIInsightsPanel, { type ClinicalReport } from "@/components/AIInsightsPanel";
 import { Shield, Zap, Layers, Dna, Heart, Brain } from "lucide-react";
 
 const Index = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [scanComplete, setScanComplete] = useState(false);
   const [patient, setPatient] = useState<PatientInfo | null>(null);
+  const [aiReport, setAiReport] = useState<ClinicalReport | null>(null);
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -152,7 +154,8 @@ const Index = () => {
         <HeartAnalysisResults visible={scanComplete} />
 
         {/* Report Export */}
-        <ReportExport visible={scanComplete} patient={patient} />
+        <AIInsightsPanel visible={scanComplete} patient={patient} onReport={setAiReport} />
+        <ReportExport visible={scanComplete} patient={patient} aiReport={aiReport} />
 
         {/* Stats */}
         <section className="px-4 sm:px-6 lg:px-12 pb-16">
