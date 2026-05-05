@@ -4,6 +4,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { PatientInfo } from "./PatientIntakeForm";
 import type { ClinicalReport } from "./AIInsightsPanel";
+import type { BiometricProfile } from "@/lib/biometricProfile";
 
 const cognitiveMetrics = [
   ["IQ Estimate (WAIS-equiv.)", "142", "85-145", "High"],
@@ -296,12 +297,81 @@ function calcAge(dob: string): string {
   return `${age} y`;
 }
 
-function buildPDF(patient: PatientInfo | null, ai: ClinicalReport | null): jsPDF {
+function buildPDF(
+  patient: PatientInfo | null,
+  ai: ClinicalReport | null,
+  profile: BiometricProfile | null,
+): jsPDF {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const now = new Date();
   const reportId = `MM-${now.getTime().toString(36).toUpperCase()}`;
   const sessionId = `SES-${pad(now.getFullYear() % 100)}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
   const patientId = patient?.patientId || `PT-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+
+  // Profile-derived overrides (fall back to static demo data when missing)
+  const cardiacRows: (string | number)[][] = profile
+    ? [
+        ["Resting Heart Rate", `${profile.cardiac.hr} bpm`, "60-100 bpm", profile.cardiac.hr < 60 || profile.cardiac.hr > 100 ? "Review" : "Normal"],
+        ["Systolic BP", `${profile.cardiac.sys} mmHg`, "<130 mmHg", profile.cardiac.sys < 130 ? "Optimal" : "Elevated"],
+        ["Diastolic BP", `${profile.cardiac.dia} mmHg`, "<85 mmHg", profile.cardiac.dia < 85 ? "Optimal" : "Elevated"],
+        ["SpO2", `${profile.cardiac.spo2}%`, ">=95%", profile.cardiac.spo2 >= 95 ? "Normal" : "Low"],
+        ["Ejection Fraction", `${profile.cardiac.ef}%`, "55-70%", "Normal"],
+        ["Cardiac Output", `${profile.cardiac.co} L/min`, "4-8 L/min", "Normal"],
+        ["Stroke Volume", `${profile.cardiac.sv} mL`, "60-100 mL", "Normal"],
+        ["VO2 Max", `${profile.cardiac.vo2max} mL/kg/min`, "35-45", profile.cardiac.vo2max >= 35 ? "Above avg" : "Below avg"],
+        ["HRV (RMSSD)", `${profile.cardiac.hrv} ms`, "30-100 ms", profile.cardiac.hrv >= 30 ? "Good" : "Reduced"],
+        ["QTc (Bazett)", `${profile.cardiac.qtc} ms`, "350-440 ms", profile.cardiac.qtc <= 440 ? "Normal" : "Prolonged"],
+        ["PR Interval", `${profile.cardiac.pr} ms`, "120-200 ms", "Normal"],
+        ["QRS Duration", `${profile.cardiac.qrs} ms`, "70-110 ms", "Normal"],
+        ["Pulse Wave Velocity", `${profile.cardiac.pwv} m/s`, "5-10 m/s", "Normal"],
+        ["Augmentation Index", `${profile.cardiac.augIndex}%`, "<30%", profile.cardiac.augIndex < 30 ? "Normal" : "Elevated"],
+      ]
+    : cardiacData;
+
+  const cognitiveRows: (string | number)[][] = profile
+    ? [
+        ["IQ Estimate (WAIS-equiv.)", `${profile.neural.iq}`, "85-145", profile.neural.iq >= 130 ? "Superior" : profile.neural.iq >= 110 ? "High" : "Average"],
+        ["Working Memory Index", `${profile.neural.workingMemory}`, "85-130", profile.neural.workingMemory >= 120 ? "Superior" : "Above avg"],
+        ["Processing Speed", `${profile.neural.processingMs} ms`, "150-250 ms", profile.neural.processingMs < 150 ? "Above avg" : "Average"],
+        ["Emotional IQ", `${profile.neural.eqi}`, "90-130", "Above avg"],
+        ["Creativity Index", `${profile.neural.creativity}%`, "50-90%", "High"],
+        ["Neural Efficiency", `${profile.neural.efficiency}%`, "70-95%", "High"],
+      ]
+    : cognitiveMetrics;
+
+  const eegRows: (string | number)[][] = profile
+    ? [
+        ["Delta (0.5-4 Hz)", `${profile.neural.bands.delta} µV`, "Low (awake)", "Normal"],
+        ["Theta (4-8 Hz)", `${profile.neural.bands.theta} µV`, "Moderate", "Normal"],
+        ["Alpha (8-13 Hz)", `${profile.neural.bands.alpha} µV`, "Dominant occipital", "Normal"],
+        ["Beta (13-30 Hz)", `${profile.neural.bands.beta} µV`, "Frontal", "Normal"],
+        ["Gamma (30-100 Hz)", `${profile.neural.bands.gamma} µV`, "Active cognition", "Normal"],
+      ]
+    : eegBands;
+
+  const ancestryRows: (string | number)[][] = profile
+    ? profile.genomic.ancestry.map((a) => [a.region, `${a.pct}%`])
+    : ancestry;
+
+  const healthRiskRows: (string | number)[][] = profile
+    ? profile.genomic.risks.map((r) => [
+        r.condition,
+        `${r.status === "low" ? "Below Avg" : r.status === "mild" ? "Slightly Elev." : "Average"} (${r.relRisk}x)`,
+        r.gene,
+        r.status === "mild" ? "Targeted screening" : r.status === "low" ? "No additional action" : "Routine screening",
+      ])
+    : healthRisks;
+
+  const calibLogRows: (string | number)[][] = profile
+    ? [
+        ["00:00.0", "Sensor init", "—", "—", "—", "OK"],
+        ["00:00.6", "Baseline drift", `${(profile.quality.driftMvS * 2.4).toFixed(2)} mV/s`, `${(profile.quality.snrDb * 0.55).toFixed(1)}`, "84%", "OK"],
+        ["00:01.2", "SNR ramp", `${(profile.quality.driftMvS * 1.8).toFixed(2)} mV/s`, `${(profile.quality.snrDb * 0.7).toFixed(1)}`, "91%", "OK"],
+        ["00:01.8", "Alignment lock", `${(profile.quality.driftMvS * 1.4).toFixed(2)} mV/s`, `${(profile.quality.snrDb * 0.85).toFixed(1)}`, `${(profile.quality.alignmentPct * 0.96).toFixed(0)}%`, "OK"],
+        ["00:02.4", "Channel calib", `${(profile.quality.driftMvS * 1.15).toFixed(2)} mV/s`, `${(profile.quality.snrDb * 0.95).toFixed(1)}`, `${(profile.quality.alignmentPct * 0.99).toFixed(0)}%`, "OK"],
+        ["00:03.0", "Handoff to scan", `${profile.quality.driftMvS.toFixed(2)} mV/s`, `${profile.quality.snrDb.toFixed(1)}`, `${profile.quality.alignmentPct.toFixed(0)}%`, `PASS ${profile.quality.grade}`],
+      ]
+    : calibrationLog;
 
   // ========= COVER =========
   doc.setFillColor(15, 23, 42);
@@ -360,6 +430,31 @@ function buildPDF(patient: PatientInfo | null, ai: ClinicalReport | null): jsPDF
   doc.text(`License: ${patient?.doctorLicense || "—"}    Facility: ${patient?.facility || "—"}`, 110, y + 24);
   y += 36;
 
+  // ----- Biometric capture & identity-hash strip -----
+  if (profile) {
+    doc.setDrawColor(...C.line);
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(14, y, 182, 22, 2, 2, "FD");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...C.text);
+    doc.text("FINGERPRINT CAPTURE & DETERMINISTIC ID", 18, y + 6);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    const cap = profile.capture;
+    doc.text(
+      `Identity Hash: ${profile.identityHash.toUpperCase()}   ·   Skin: ${profile.skin.label} (Mel ${profile.skin.melaninIndex})   ·   Perfusion Idx: ${profile.skin.perfusionIndex}`,
+      18,
+      y + 12,
+    );
+    doc.text(
+      `Ridge Density: ${cap.ridgeDensity}/cm²   ·   Minutiae: ${cap.minutiaeCount}   ·   Contact: ${cap.contactArea} mm²   ·   Pressure: ${(cap.pressure * 100).toFixed(0)}%   ·   Dwell: ${cap.dwellMs} ms   ·   Finger Temp: ${cap.fingerTempC}°C   ·   Moisture: ${(cap.moisture * 100).toFixed(0)}%`,
+      18,
+      y + 18,
+    );
+    y += 26;
+  }
+
   // Summary panel
   doc.setFillColor(...C.bgSoft);
   doc.roundedRect(14, y, 182, 36, 2, 2, "F");
@@ -378,12 +473,12 @@ function buildPDF(patient: PatientInfo | null, ai: ClinicalReport | null): jsPDF
   summary.forEach((line, i) => doc.text(line, 18, y + 14 + i * 5));
 
   // Quality gates row
-  y += 42;
+  y += 6;
   const gates = [
-    { label: "Calibration", value: "A+", sub: "Conf. 99.0%" },
-    { label: "Signal Quality", value: "98.7%", sub: "SNR 7.4" },
+    { label: "Calibration", value: profile?.quality.grade ?? "A+", sub: `Conf. ${(profile?.quality.confidence ?? 99.0).toFixed(1)}%` },
+    { label: "Signal Quality", value: `${(profile?.quality.alignmentPct ?? 98.7).toFixed(1)}%`, sub: `SNR ${(profile?.quality.snrDb ?? 7.4).toFixed(1)}dB` },
     { label: "Acquisition", value: "10.0 s", sub: "60 fps" },
-    { label: "Final Confidence", value: "99.94%", sub: "All channels" },
+    { label: "Final Confidence", value: `${(profile?.quality.confidence ?? 99.94).toFixed(2)}%`, sub: "All channels" },
   ];
   const gw = 42;
   gates.forEach((g, i) => {
@@ -415,7 +510,7 @@ function buildPDF(patient: PatientInfo | null, ai: ClinicalReport | null): jsPDF
   autoTable(doc, {
     startY: y,
     head: [["Time", "Phase", "Drift", "SNR", "Alignment", "Status"]],
-    body: calibrationLog,
+    body: calibLogRows,
     theme: "grid",
     headStyles: { fillColor: C.primary, textColor: 255, fontSize: 9 },
     bodyStyles: { fontSize: 8, textColor: C.text },
@@ -551,7 +646,7 @@ function buildPDF(patient: PatientInfo | null, ai: ClinicalReport | null): jsPDF
   autoTable(doc, {
     startY: y,
     head: [["Metric", "Value", "Reference", "Interpretation"]],
-    body: cognitiveMetrics,
+    body: cognitiveRows,
     theme: "striped",
     headStyles: { fillColor: C.primary, textColor: 255, fontSize: 9 },
     bodyStyles: { fontSize: 9, textColor: C.text },
@@ -579,7 +674,7 @@ function buildPDF(patient: PatientInfo | null, ai: ClinicalReport | null): jsPDF
   autoTable(doc, {
     startY: y,
     head: [["Band", "Amplitude", "Distribution", "Finding"]],
-    body: eegBands,
+    body: eegRows,
     theme: "striped",
     headStyles: { fillColor: C.primary, textColor: 255, fontSize: 9 },
     bodyStyles: { fontSize: 9, textColor: C.text },
@@ -601,7 +696,7 @@ function buildPDF(patient: PatientInfo | null, ai: ClinicalReport | null): jsPDF
   autoTable(doc, {
     startY: y,
     head: [["Metric", "Value", "Reference", "Finding"]],
-    body: cardiacData,
+    body: cardiacRows,
     theme: "striped",
     headStyles: { fillColor: C.heart, textColor: 255, fontSize: 9 },
     bodyStyles: { fontSize: 9, textColor: C.text },
@@ -651,7 +746,7 @@ function buildPDF(patient: PatientInfo | null, ai: ClinicalReport | null): jsPDF
   autoTable(doc, {
     startY: y,
     head: [["Region", "Percentage"]],
-    body: ancestry,
+    body: ancestryRows,
     theme: "striped",
     headStyles: { fillColor: C.dna, textColor: 255, fontSize: 9 },
     bodyStyles: { fontSize: 9, textColor: C.text },
@@ -679,7 +774,7 @@ function buildPDF(patient: PatientInfo | null, ai: ClinicalReport | null): jsPDF
   autoTable(doc, {
     startY: y,
     head: [["Condition", "Relative Risk", "Loci", "Clinical Action"]],
-    body: healthRisks,
+    body: healthRiskRows,
     theme: "striped",
     headStyles: { fillColor: C.dna, textColor: 255, fontSize: 9 },
     bodyStyles: { fontSize: 9, textColor: C.text },
@@ -761,10 +856,12 @@ function buildPDF(patient: PatientInfo | null, ai: ClinicalReport | null): jsPDF
 const ReportExport = ({
   visible,
   patient,
+  profile,
   aiReport,
 }: {
   visible: boolean;
   patient: PatientInfo | null;
+  profile?: BiometricProfile | null;
   aiReport: ClinicalReport | null;
 }) => {
   const [exporting, setExporting] = useState(false);
@@ -772,7 +869,7 @@ const ReportExport = ({
   const exportPDF = async () => {
     setExporting(true);
     try {
-      const doc = buildPDF(patient, aiReport);
+      const doc = buildPDF(patient, aiReport, profile ?? null);
       const safeName = (patient?.patientName || "Patient").replace(/[^a-z0-9]+/gi, "_");
       doc.save(`MegaMind-Report-${safeName}-${Date.now()}.pdf`);
     } finally {
