@@ -1,16 +1,31 @@
 import { useEffect, useRef, useState } from "react";
 import { Activity, Brain, Dna, HeartPulse, Gauge, TrendingUp, AlertTriangle, Wind, Thermometer, Droplet } from "lucide-react";
+import type { BiometricProfile } from "@/lib/biometricProfile";
 
 type Sample = { t: number; conf: number; snr: number; drift: number; align: number };
 type TabKey = "overview" | "ecg" | "eeg" | "dna";
 
 const MAX_POINTS = 120;
 
-const LiveDashboard = ({ scanning, scanComplete }: { scanning: boolean; scanComplete: boolean }) => {
+const LiveDashboard = ({
+  scanning,
+  scanComplete,
+  profile,
+}: {
+  scanning: boolean;
+  scanComplete: boolean;
+  profile?: BiometricProfile | null;
+}) => {
   const [tab, setTab] = useState<TabKey>("overview");
   const [samples, setSamples] = useState<Sample[]>([]);
   const [anomalies, setAnomalies] = useState<{ t: number; sev: "info" | "warning" | "critical"; msg: string }[]>([]);
-  const [vitals, setVitals] = useState({ hr: 72, spo2: 98, sys: 120, dia: 80, resp: 14, temp: 36.8 });
+  const baseHr = profile?.cardiac.hr ?? 72;
+  const baseSys = profile?.cardiac.sys ?? 120;
+  const baseDia = profile?.cardiac.dia ?? 80;
+  const baseSpo2 = profile?.cardiac.spo2 ?? 98;
+  const baseHrv = profile?.cardiac.hrv ?? 62;
+  const baseTemp = profile?.capture.fingerTempC ? profile.capture.fingerTempC - 4.2 : 36.8;
+  const [vitals, setVitals] = useState({ hr: baseHr, spo2: baseSpo2, sys: baseSys, dia: baseDia, resp: 14, temp: baseTemp });
   const startRef = useRef<number>(0);
   const rafRef = useRef<number>(0);
   const ecgRef = useRef<HTMLCanvasElement>(null);
@@ -33,14 +48,14 @@ const LiveDashboard = ({ scanning, scanComplete }: { scanning: boolean; scanComp
         ? (t / 3) * 70 + Math.random() * 2
         : Math.min(99.97, 70 + (1 - Math.exp(-(t - 3) / 3)) * 29.7);
       setSamples((s) => [...s, { t, conf, snr, drift, align }].slice(-MAX_POINTS));
-      // Live vitals jitter
-      setVitals((v) => ({
-        hr: clamp(72 + Math.sin(t * 1.1) * 3 + (Math.random() - 0.5) * 1.5, 55, 110),
-        spo2: clamp(98 + (Math.random() - 0.5) * 0.6, 94, 100),
-        sys: clamp(120 + Math.sin(t * 0.6) * 4 + (Math.random() - 0.5), 100, 140),
-        dia: clamp(80 + Math.sin(t * 0.7) * 3 + (Math.random() - 0.5), 65, 95),
+      // Live vitals jitter — anchored to deterministic patient baseline
+      setVitals(() => ({
+        hr: clamp(baseHr + Math.sin(t * 1.1) * 2.5 + (Math.random() - 0.5) * 1.2, 45, 130),
+        spo2: clamp(baseSpo2 + (Math.random() - 0.5) * 0.5, 90, 100),
+        sys: clamp(baseSys + Math.sin(t * 0.6) * 3.5 + (Math.random() - 0.5), 90, 160),
+        dia: clamp(baseDia + Math.sin(t * 0.7) * 2.5 + (Math.random() - 0.5), 55, 100),
         resp: clamp(14 + Math.sin(t * 0.4) * 1.2, 10, 22),
-        temp: clamp(36.8 + Math.sin(t * 0.2) * 0.15, 36.2, 37.4),
+        temp: clamp(baseTemp + Math.sin(t * 0.2) * 0.12, 35.8, 37.6),
       }));
       // Synthetic anomaly events at meaningful checkpoints
       if (Math.abs(t - 3) < 0.07) push({ t, sev: "info", msg: "Calibration locked · handoff to acquisition" });
@@ -109,7 +124,7 @@ const LiveDashboard = ({ scanning, scanComplete }: { scanning: boolean; scanComp
           <Vital icon={Activity} label="BP" value={`${vitals.sys.toFixed(0)}/${vitals.dia.toFixed(0)}`} tint="text-violet-300" />
           <Vital icon={Wind} label="Resp" value={`${vitals.resp.toFixed(0)}/min`} tint="text-emerald-300" />
           <Vital icon={Thermometer} label="Temp" value={`${vitals.temp.toFixed(1)}°C`} tint="text-amber-300" />
-          <Vital icon={Gauge} label="HRV" value={`62 ms`} tint="text-primary" />
+          <Vital icon={Gauge} label="HRV" value={`${baseHrv} ms`} tint="text-primary" />
         </div>
 
         {/* Tabs */}

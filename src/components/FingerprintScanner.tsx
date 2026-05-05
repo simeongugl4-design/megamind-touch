@@ -1,8 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 import { Fingerprint, Brain, Zap, Sparkles, Dna, HeartPulse, Lock, Activity } from "lucide-react";
 import { useScanFx } from "@/hooks/useScanFx";
+import type { FingerprintCapture } from "@/lib/biometricProfile";
 
-const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningChange?: (scanning: boolean) => void; onScanComplete?: () => void }) => {
+const FingerprintScanner = ({
+  onScanningChange,
+  onScanComplete,
+  onCapture,
+}: {
+  onScanningChange?: (scanning: boolean) => void;
+  onScanComplete?: () => void;
+  onCapture?: (cap: FingerprintCapture) => void;
+}) => {
   const [scanning, setScanningState] = useState(false);
   const onScanCompleteRef = useRef(onScanComplete);
   onScanCompleteRef.current = onScanComplete;
@@ -34,6 +43,10 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
   const [cooldownLeft, setCooldownLeft] = useState(0);
   const [denied, setDenied] = useState(false);
   const cooldownUntilRef = useRef(0);
+  // Captured touch micro-features from the most recent press
+  const captureRef = useRef<FingerprintCapture | null>(null);
+  const pressStartRef = useRef<number>(0);
+  const pressSamplesRef = useRef<{ p: number; t: number }[]>([]);
   const locked = scanning || calibrating || cooldownLeft > 0;
   // Layer scanner-side FX matching the active phase
   const fxProfile = phase === "cardiac" ? "heart" : phase === "dna" ? "dna" : "brain";
@@ -200,6 +213,20 @@ const FingerprintScanner = ({ onScanningChange, onScanComplete }: { onScanningCh
       window.setTimeout(() => setDenied(false), 450);
       return;
     }
+    // Synthesize a touch capture profile (deterministic randomness shouldn't
+    // affect the patient profile — patient identity drives that — but the
+    // capture is reported for UI realism + report log).
+    const cap: FingerprintCapture = {
+      ridgeDensity: +(20 + Math.random() * 5).toFixed(1),
+      minutiaeCount: Math.round(110 + Math.random() * 60),
+      contactArea: Math.round(140 + Math.random() * 80),
+      pressure: +(0.55 + Math.random() * 0.3).toFixed(2),
+      dwellMs: Math.round(2200 + Math.random() * 800),
+      moisture: +(0.3 + Math.random() * 0.4).toFixed(2),
+      fingerTempC: +(31 + Math.random() * 3).toFixed(1),
+    };
+    captureRef.current = cap;
+    onCapture?.(cap);
     // Run pre-scan calibration first; the calibration effect will hand off to scanning
     setCalibrating(true);
   };

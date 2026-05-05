@@ -2,6 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Sparkles, Loader2, AlertTriangle, ShieldCheck, Activity, Stethoscope } from "lucide-react";
 import type { PatientInfo } from "./PatientIntakeForm";
+import type { BiometricProfile } from "@/lib/biometricProfile";
 
 export type ClinicalReport = {
   executive_summary: string;
@@ -15,12 +16,60 @@ export type ClinicalReport = {
   follow_up: string;
 };
 
-const sampleMetrics = {
-  cardiac: { hr_bpm: 72, bp: "120/80", spo2: 98, ef: 62, hrv_rmssd_ms: 62, qtc_ms: 410 },
-  neural: { iq_estimate: 142, alpha_uV: 24.7, beta_uV: 18.3, theta_uV: 12.4, gamma_uV: 6.1 },
-  genomic: { snps: "4.1M", apoe: "e3/e3", cyp1a2: "*1A/*1A fast", cfh_variant: true, t2d_relative_risk: 0.7 },
-  quality: { calibration: "A+", final_confidence: 99.94, snr_db: 38, alignment_pct: 99 },
-};
+function buildMetrics(profile: BiometricProfile | null) {
+  if (!profile) {
+    return {
+      cardiac: { hr_bpm: 72, bp: "120/80", spo2: 98, ef: 62, hrv_rmssd_ms: 62, qtc_ms: 410 },
+      neural: { iq_estimate: 120, alpha_uV: 22, beta_uV: 16, theta_uV: 10, gamma_uV: 6 },
+      genomic: { snps: "4.1M", apoe: "ε3/ε3" },
+      quality: { calibration: "A+", final_confidence: 99, snr_db: 38, alignment_pct: 99 },
+    };
+  }
+  const c = profile.cardiac;
+  const n = profile.neural;
+  const g = profile.genomic;
+  const q = profile.quality;
+  return {
+    cardiac: {
+      hr_bpm: c.hr,
+      bp: `${c.sys}/${c.dia}`,
+      spo2: c.spo2,
+      ef: c.ef,
+      hrv_rmssd_ms: c.hrv,
+      qtc_ms: c.qtc,
+      pr_ms: c.pr,
+      qrs_ms: c.qrs,
+      rhythm: c.rhythm,
+      pwv_m_s: c.pwv,
+    },
+    neural: {
+      iq_estimate: n.iq,
+      processing_ms: n.processingMs,
+      state: n.state,
+      bands_uV: n.bands,
+    },
+    genomic: {
+      snps: g.snpCount,
+      apoe: g.apoe,
+      cyp1a2: g.cyp1a2,
+      actn3: g.actn3,
+      lactose: g.lactose,
+      aldh2: g.aldh2,
+      ancestry_top: g.ancestry.slice(0, 3).map((a) => `${a.region} ${a.pct}%`),
+      relative_risks: g.risks.map((r) => ({ condition: r.condition, rr: r.relRisk })),
+    },
+    skin: { fitzpatrick: profile.skin.fitzpatrick, label: profile.skin.label, perfusion_index: profile.skin.perfusionIndex },
+    capture: profile.capture,
+    quality: {
+      calibration: q.grade,
+      final_confidence: q.confidence,
+      snr_db: q.snrDb,
+      alignment_pct: q.alignmentPct,
+      drift_mv_s: q.driftMvS,
+    },
+    identity_hash: profile.identityHash,
+  };
+}
 
 const statusStyle: Record<ClinicalReport["overall_status"], string> = {
   Normal: "text-green-400 border-green-400/40 bg-green-400/5",
@@ -38,10 +87,12 @@ const sevStyle = {
 const AIInsightsPanel = ({
   visible,
   patient,
+  profile,
   onReport,
 }: {
   visible: boolean;
   patient: PatientInfo | null;
+  profile?: BiometricProfile | null;
   onReport?: (r: ClinicalReport | null) => void;
 }) => {
   const [loading, setLoading] = useState(false);
@@ -53,7 +104,7 @@ const AIInsightsPanel = ({
     setError(null);
     try {
       const { data, error } = await supabase.functions.invoke("clinical-insights", {
-        body: { patient, metrics: sampleMetrics },
+        body: { patient, metrics: buildMetrics(profile ?? null) },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);

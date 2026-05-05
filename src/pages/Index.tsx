@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import megamindLogo from "@/assets/megamind-logo.png";
 import neuralBg from "@/assets/neural-bg.jpg";
 import FingerprintScanner from "@/components/FingerprintScanner";
@@ -16,6 +16,8 @@ import BrainChatbot from "@/components/BrainChatbot";
 import PatientIntakeForm, { type PatientInfo } from "@/components/PatientIntakeForm";
 import LiveDashboard from "@/components/LiveDashboard";
 import AIInsightsPanel, { type ClinicalReport } from "@/components/AIInsightsPanel";
+import BiometricProfileCard from "@/components/BiometricProfileCard";
+import { deriveProfile, type FingerprintCapture } from "@/lib/biometricProfile";
 import { Shield, Zap, Layers, Dna, Heart, Brain } from "lucide-react";
 
 const Index = () => {
@@ -23,6 +25,11 @@ const Index = () => {
   const [scanComplete, setScanComplete] = useState(false);
   const [patient, setPatient] = useState<PatientInfo | null>(null);
   const [aiReport, setAiReport] = useState<ClinicalReport | null>(null);
+  const [capture, setCapture] = useState<FingerprintCapture | null>(null);
+  const profile = useMemo(
+    () => (patient ? deriveProfile(patient, capture ?? undefined) : null),
+    [patient, capture],
+  );
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -87,6 +94,7 @@ const Index = () => {
                   <FingerprintScanner
                     onScanningChange={setIsScanning}
                     onScanComplete={() => setScanComplete(true)}
+                    onCapture={setCapture}
                   />
                 ) : (
                   <div className="text-center space-y-2 px-4">
@@ -141,8 +149,11 @@ const Index = () => {
         {/* Patient & Doctor Intake (gates the scanner) */}
         <PatientIntakeForm onSubmit={setPatient} current={patient} locked={isScanning} />
 
+        {/* Patient biometric profile (derived from identity + touch features) */}
+        <BiometricProfileCard profile={profile} />
+
         {/* Live Dashboard with drill-downs */}
-        <LiveDashboard scanning={isScanning} scanComplete={scanComplete} />
+        <LiveDashboard scanning={isScanning} scanComplete={scanComplete} profile={profile} />
 
         {/* Brain Analysis Results */}
         <BrainAnalysisResults visible={scanComplete} />
@@ -154,8 +165,8 @@ const Index = () => {
         <HeartAnalysisResults visible={scanComplete} />
 
         {/* Report Export */}
-        <AIInsightsPanel visible={scanComplete} patient={patient} onReport={setAiReport} />
-        <ReportExport visible={scanComplete} patient={patient} aiReport={aiReport} />
+        <AIInsightsPanel visible={scanComplete} patient={patient} profile={profile} onReport={setAiReport} />
+        <ReportExport visible={scanComplete} patient={patient} profile={profile} aiReport={aiReport} />
 
         {/* Stats */}
         <section className="px-4 sm:px-6 lg:px-12 pb-16">
