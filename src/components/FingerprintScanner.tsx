@@ -175,9 +175,11 @@ const FingerprintScanner = ({
           setCooldownLeft(COOLDOWN_MS);
           setTimeout(() => {
             setScanning(false);
-            setPhase("idle");
-            setProgress(0);
-            setDetectedData([]);
+            // Keep the completed snapshot frozen on screen — do NOT reset
+            // phase/progress/feed. The ring stays at 100% filled, the
+            // "Clone Complete" badge remains, and animations stop because
+            // `scanning` is now false (particles, rings, scan-line, orbiters
+            // are all gated on `scanning`).
           }, 4000);
           return 100;
         }
