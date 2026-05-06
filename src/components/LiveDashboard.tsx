@@ -471,31 +471,129 @@ const DrillCanvas = ({
   tint,
   title,
   meta,
+  markers = [],
+  duration = 13,
+  focusT,
+  onMarkerClick,
+  onResume,
+  activeAnomaly,
 }: {
   refEl: React.RefObject<HTMLCanvasElement>;
   tint: string;
   title: string;
   meta: string[];
-}) => (
-  <div className="rounded-lg border border-border bg-background/40 p-4">
-    <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-      <p className="font-orbitron text-xs tracking-wider uppercase" style={{ color: tint }}>
-        {title}
-      </p>
-      <div className="flex flex-wrap items-center gap-2">
-        {meta.map((m) => (
-          <span
-            key={m}
-            className="font-mono text-[9px] uppercase px-2 py-0.5 rounded border border-border bg-background/60 text-muted-foreground"
-          >
-            {m}
-          </span>
-        ))}
+  markers?: Anomaly[];
+  duration?: number;
+  focusT?: number | null;
+  onMarkerClick?: (a: Anomaly) => void;
+  onResume?: () => void;
+  activeAnomaly?: Anomaly | null;
+}) => {
+  const sevColor = (s: Anomaly["sev"]) =>
+    s === "critical" ? "hsl(0,80%,60%)" : s === "warning" ? "hsl(45,100%,55%)" : tint;
+  return (
+    <div className="rounded-lg border border-border bg-background/40 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <p className="font-orbitron text-xs tracking-wider uppercase" style={{ color: tint }}>
+          {title}
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          {meta.map((m) => (
+            <span
+              key={m}
+              className="font-mono text-[9px] uppercase px-2 py-0.5 rounded border border-border bg-background/60 text-muted-foreground"
+            >
+              {m}
+            </span>
+          ))}
+          {focusT !== null && focusT !== undefined && onResume && (
+            <button
+              onClick={onResume}
+              className="inline-flex items-center gap-1 font-mono text-[9px] uppercase px-2 py-0.5 rounded border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20"
+            >
+              <Play className="w-2.5 h-2.5" /> Resume Live
+            </button>
+          )}
+        </div>
       </div>
+      <div className="relative">
+        <canvas ref={refEl} width={1200} height={280} className="w-full h-56 rounded" />
+        {/* Frozen-frame veil when paused on a timepoint */}
+        {focusT !== null && focusT !== undefined && (
+          <div className="pointer-events-none absolute inset-0 rounded ring-1 ring-amber-300/40 bg-amber-300/[0.03]" />
+        )}
+        {/* Anomaly markers — clickable, jump to exact timepoint */}
+        {markers.map((a, i) => {
+          const left = `${Math.max(0, Math.min(100, (a.t / duration) * 100))}%`;
+          const isActive = activeAnomaly?.t === a.t && activeAnomaly?.msg === a.msg;
+          const c = sevColor(a.sev);
+          return (
+            <button
+              key={i}
+              onClick={() => onMarkerClick?.(a)}
+              title={`t+${a.t.toFixed(1)}s · ${a.msg}`}
+              className="group absolute top-0 bottom-0 -translate-x-1/2 flex flex-col items-center"
+              style={{ left }}
+            >
+              <span
+                className="w-px flex-1 opacity-60 group-hover:opacity-100 transition-opacity"
+                style={{ background: c }}
+              />
+              <span
+                className={`absolute top-1 w-2.5 h-2.5 rounded-full border-2 transition-transform ${
+                  isActive ? "scale-125" : "group-hover:scale-110"
+                }`}
+                style={{
+                  background: c,
+                  borderColor: "hsl(220,40%,6%)",
+                  boxShadow: `0 0 8px ${c}`,
+                }}
+              />
+              <span
+                className="absolute top-5 font-mono text-[8px] tabular-nums px-1 rounded bg-background/80 border border-border text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100"
+              >
+                t+{a.t.toFixed(1)}s
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {/* Deep clinical explanation panel for the active anomaly */}
+      {activeAnomaly && (
+        <div
+          className="mt-3 rounded-md border p-3 animate-fade-in"
+          style={{
+            borderColor: sevColor(activeAnomaly.sev) + "66",
+            background: sevColor(activeAnomaly.sev) + "0F",
+          }}
+        >
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <p
+              className="font-orbitron text-[10px] tracking-wider uppercase"
+              style={{ color: sevColor(activeAnomaly.sev) }}
+            >
+              <Pause className="inline w-3 h-3 mr-1" />
+              Frame frozen at t+{activeAnomaly.t.toFixed(1)}s · {activeAnomaly.sev.toUpperCase()}
+            </p>
+            <span className="font-mono text-[9px] uppercase text-muted-foreground">
+              {activeAnomaly.modality === "all" ? "system" : activeAnomaly.modality}
+            </span>
+          </div>
+          <p className="font-mono text-[11px] text-foreground/90 mb-1">{activeAnomaly.msg}</p>
+          <p className="font-mono text-[10px] leading-relaxed text-muted-foreground">
+            {activeAnomaly.detail}
+          </p>
+        </div>
+      )}
+      {/* Marker legend */}
+      {markers.length > 0 && (
+        <p className="mt-2 font-mono text-[9px] text-muted-foreground">
+          {markers.length} event{markers.length === 1 ? "" : "s"} on timeline · click a marker to jump to that timepoint
+        </p>
+      )}
     </div>
-    <canvas ref={refEl} width={1200} height={280} className="w-full h-56 rounded" />
-  </div>
-);
+  );
+};
 
 /* ---------- canvas drawers ---------- */
 
