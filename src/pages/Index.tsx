@@ -17,6 +17,7 @@ import PatientIntakeForm, { type PatientInfo } from "@/components/PatientIntakeF
 import LiveDashboard from "@/components/LiveDashboard";
 import AIInsightsPanel, { type ClinicalReport } from "@/components/AIInsightsPanel";
 import BiometricProfileCard from "@/components/BiometricProfileCard";
+import CalibrationNarrative from "@/components/CalibrationNarrative";
 import { deriveProfile, type FingerprintCapture } from "@/lib/biometricProfile";
 import { Shield, Zap, Layers, Dna, Heart, Brain } from "lucide-react";
 
@@ -154,6 +155,9 @@ const Index = () => {
 
         {/* Live Dashboard with drill-downs */}
         <LiveDashboard scanning={isScanning} scanComplete={scanComplete} profile={profile} />
+
+        {/* Calibration narrative + sickness screening */}
+        <CalibrationNarrative visible={scanComplete} profile={profile} />
 
         {/* Brain Analysis Results */}
         <BrainAnalysisResults visible={scanComplete} />
