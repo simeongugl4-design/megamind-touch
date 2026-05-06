@@ -1,9 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { Activity, Brain, Dna, HeartPulse, Gauge, TrendingUp, AlertTriangle, Wind, Thermometer, Droplet } from "lucide-react";
+import { Activity, Brain, Dna, HeartPulse, Gauge, TrendingUp, AlertTriangle, Wind, Thermometer, Droplet, Play, Pause } from "lucide-react";
 import type { BiometricProfile } from "@/lib/biometricProfile";
 
 type Sample = { t: number; conf: number; snr: number; drift: number; align: number };
 type TabKey = "overview" | "ecg" | "eeg" | "dna";
+type Modality = "ecg" | "eeg" | "dna" | "all";
+type Anomaly = {
+  t: number;
+  sev: "info" | "warning" | "critical";
+  msg: string;
+  modality: Modality;
+  detail: string;
+};
 
 const MAX_POINTS = 120;
 
@@ -18,7 +26,9 @@ const LiveDashboard = ({
 }) => {
   const [tab, setTab] = useState<TabKey>("overview");
   const [samples, setSamples] = useState<Sample[]>([]);
-  const [anomalies, setAnomalies] = useState<{ t: number; sev: "info" | "warning" | "critical"; msg: string }[]>([]);
+  const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
+  const [focusT, setFocusT] = useState<number | null>(null);
+  const [activeAnomaly, setActiveAnomaly] = useState<Anomaly | null>(null);
   const baseHr = profile?.cardiac.hr ?? 72;
   const baseSys = profile?.cardiac.sys ?? 120;
   const baseDia = profile?.cardiac.dia ?? 80;
@@ -32,12 +42,86 @@ const LiveDashboard = ({
   const eegRef = useRef<HTMLCanvasElement>(null);
   const dnaRef = useRef<HTMLCanvasElement>(null);
 
-  // Trend collection
+  // Build a deterministic, fingerprint-driven anomaly timeline
+  function buildTimeline(): Anomaly[] {
+    const cap = profile?.capture;
+    const moisture = cap?.moisture ?? 0.45;
+    const pressure = cap?.pressure ?? 0.7;
+    const ridge = cap?.ridgeDensity ?? 22;
+    const tempF = cap?.fingerTempC ?? 32.5;
+    const hash = profile?.identityHash ?? "————";
+    return [
+      {
+        t: 1.2,
+        sev: "info",
+        modality: "all",
+        msg: "Sensor handshake · capacitive contact established",
+        detail: `Identity hash ${hash}. Capacitive contact area ${(cap?.contactArea ?? 0)} px², dwell ${(cap?.dwellMs ?? 0)} ms. Sensor confirms a single-finger press (no edge artefacts).`,
+      },
+      {
+        t: 3.0,
+        sev: "info",
+        modality: "all",
+        msg: "Calibration locked · handoff to acquisition",
+        detail: `SNR converged ≥ 38 dB and baseline drift dropped below 0.05 mV/s. Skin moisture ${(moisture * 100).toFixed(0)}% and contact pressure ${(pressure * 100).toFixed(0)}% are within optimal envelope — minimal motion artefact expected.`,
+      },
+      {
+        t: 4.4,
+        sev: "info",
+        modality: "ecg",
+        msg: "Sinus rhythm confirmed · QRS 88 ms",
+        detail: `Pulse-wave reconstruction yields HR ${baseHr.toFixed(0)} bpm with consistent P-QRS-T morphology. Axis is normal (+30°). No ectopy in first acquisition window.`,
+      },
+      {
+        t: 5.8,
+        sev: ridge > 23 ? "info" : "warning",
+        modality: "eeg",
+        msg: `Cortical baseline · α dominance ${(profile?.neural.alpha ?? 10).toFixed(1)} Hz`,
+        detail: `Posterior alpha rhythm reconstructed from microvascular pulsation envelope. Ridge density ${ridge.toFixed(1)} ridges/mm gives ${ridge > 23 ? "excellent" : "acceptable"} spatial sampling for the surrogate EEG model.`,
+      },
+      {
+        t: 7.1,
+        sev: "warning",
+        modality: "ecg",
+        msg: "Transient T-wave variance · within tolerance",
+        detail: `Subtle T-wave amplitude oscillation (±8%) detected during respiratory cycle (RSA). Not pathological, consistent with healthy autonomic tone (HRV ${baseHrv} ms). Flagged for clinician awareness.`,
+      },
+      {
+        t: 8.6,
+        sev: "info",
+        modality: "dna",
+        msg: "Epithelial yield sufficient · sequencing started",
+        detail: `Estimated ${Math.round((cap?.contactArea ?? 180) * 1.4)} epithelial cells lifted. Nanopore Q-score 38, GC content 50.2%. ${profile?.genomic.ancestry ?? "Mixed"} ancestry priors loaded.`,
+      },
+      {
+        t: 10.2,
+        sev: tempF < 31.5 ? "warning" : "info",
+        modality: "all",
+        msg: `Perfusion check · finger temp ${tempF.toFixed(1)}°C`,
+        detail: tempF < 31.5
+          ? `Cool finger temperature may reduce SpO₂ accuracy by 1–2%. Recommend warming hand and re-acquiring if SpO₂ trends below 95%.`
+          : `Peripheral perfusion is good. SpO₂ readings are reliable; PWV-derived BP estimate is high-confidence.`,
+      },
+      {
+        t: 11.8,
+        sev: "info",
+        modality: "all",
+        msg: "Final confidence ≥ 99.9% · scan complete",
+        detail: `All modalities crossed acceptance thresholds. Composite confidence locked. Report queued for AI clinical interpretation and PDF export.`,
+      },
+    ];
+  }
+
+  // Trend collection — anomaly timeline is deterministic from fingerprint
   useEffect(() => {
     if (!scanning) return;
     startRef.current = performance.now();
     setSamples([]);
+    const timeline = buildTimeline();
     setAnomalies([]);
+    setFocusT(null);
+    setActiveAnomaly(null);
+    const fired = new Set<number>();
     const id = window.setInterval(() => {
       const t = (performance.now() - startRef.current) / 1000;
       const inCalib = t < 3;
@@ -57,34 +141,52 @@ const LiveDashboard = ({
         resp: clamp(14 + Math.sin(t * 0.4) * 1.2, 10, 22),
         temp: clamp(baseTemp + Math.sin(t * 0.2) * 0.12, 35.8, 37.6),
       }));
-      // Synthetic anomaly events at meaningful checkpoints
-      if (Math.abs(t - 3) < 0.07) push({ t, sev: "info", msg: "Calibration locked · handoff to acquisition" });
-      if (Math.abs(t - 6) < 0.07) push({ t, sev: "info", msg: "Sinus rhythm confirmed · QRS 88ms" });
-      if (Math.abs(t - 9) < 0.07) push({ t, sev: "warning", msg: "Transient T-wave variance · within tolerance" });
-      if (Math.abs(t - 12) < 0.07) push({ t, sev: "info", msg: "Final confidence ≥ 99.9% · scan complete" });
+      timeline.forEach((a, i) => {
+        if (!fired.has(i) && t >= a.t) {
+          fired.add(i);
+          setAnomalies((prev) => [...prev, a]);
+        }
+      });
     }, 120);
-    function push(a: { t: number; sev: "info" | "warning" | "critical"; msg: string }) {
-      setAnomalies((prev) => [...prev, a].slice(-6));
-    }
     return () => window.clearInterval(id);
-  }, [scanning]);
+  }, [scanning, profile?.identityHash]);
+
+  // When scan completes, ensure full timeline is present (in case unmount)
+  useEffect(() => {
+    if (scanComplete && anomalies.length === 0) {
+      setAnomalies(buildTimeline());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scanComplete]);
 
   // Drill-down canvases
   useEffect(() => {
     cancelAnimationFrame(rafRef.current);
     if (!scanning && !scanComplete) return;
     const draw = () => {
-      const t = performance.now() / 1000;
+      const t = focusT !== null ? focusT + 100 : performance.now() / 1000;
       if (tab === "ecg" || tab === "overview") drawECG(ecgRef.current, t);
       if (tab === "eeg" || tab === "overview") drawEEG(eegRef.current, t);
       if (tab === "dna" || tab === "overview") drawDNA(dnaRef.current, t);
-      rafRef.current = requestAnimationFrame(draw);
+      if (focusT === null) rafRef.current = requestAnimationFrame(draw);
     };
     rafRef.current = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [tab, scanning, scanComplete]);
+  }, [tab, scanning, scanComplete, focusT]);
 
   const last = samples[samples.length - 1];
+  const SCAN_DURATION = 13;
+
+  const jumpTo = (a: Anomaly) => {
+    setActiveAnomaly(a);
+    setFocusT(a.t);
+    if (a.modality === "ecg" || a.modality === "eeg" || a.modality === "dna") {
+      setTab(a.modality);
+    }
+  };
+
+  const markersFor = (m: Modality) =>
+    anomalies.filter((a) => a.modality === m || a.modality === "all");
 
   return (
     <section className="px-4 sm:px-6 lg:px-12 pb-8">
@@ -201,6 +303,12 @@ const LiveDashboard = ({
               tint="hsl(0,80%,55%)"
               title="ECG · Lead II Reconstruction"
               meta={["25 mm/s", "10 mm/mV", `HR ${last ? 72 : "—"} bpm`, "Sinus rhythm"]}
+              markers={markersFor("ecg")}
+              duration={SCAN_DURATION}
+              focusT={focusT}
+              onMarkerClick={jumpTo}
+              onResume={() => { setFocusT(null); setActiveAnomaly(null); }}
+              activeAnomaly={activeAnomaly}
             />
           )}
           {tab === "eeg" && (
@@ -209,6 +317,12 @@ const LiveDashboard = ({
               tint="hsl(270,80%,65%)"
               title="EEG · 4-Channel Band Map"
               meta={["Fp1 α 24.7 µV", "Cz β 18.3 µV", "O1 γ 6.1 µV", "T3 θ 12.4 µV"]}
+              markers={markersFor("eeg")}
+              duration={SCAN_DURATION}
+              focusT={focusT}
+              onMarkerClick={jumpTo}
+              onResume={() => { setFocusT(null); setActiveAnomaly(null); }}
+              activeAnomaly={activeAnomaly}
             />
           )}
           {tab === "dna" && (
@@ -217,6 +331,12 @@ const LiveDashboard = ({
               tint="hsl(140,70%,50%)"
               title="DNA · Sequence Streaming"
               meta={["GC 50%", "20 bp/window", "Q-score 38", "4.1M SNPs"]}
+              markers={markersFor("dna")}
+              duration={SCAN_DURATION}
+              focusT={focusT}
+              onMarkerClick={jumpTo}
+              onResume={() => { setFocusT(null); setActiveAnomaly(null); }}
+              activeAnomaly={activeAnomaly}
             />
           )}
         </div>
