@@ -5,6 +5,7 @@ import autoTable from "jspdf-autotable";
 import type { PatientInfo } from "./PatientIntakeForm";
 import type { ClinicalReport } from "./AIInsightsPanel";
 import type { BiometricProfile } from "@/lib/biometricProfile";
+import { interpretCalibration, screenSickness } from "@/lib/calibrationNarrative";
 
 const cognitiveMetrics = [
   ["IQ Estimate (WAIS-equiv.)", "142", "85-145", "High"],
@@ -516,6 +517,74 @@ function buildPDF(
     bodyStyles: { fontSize: 8, textColor: C.text },
     margin: { left: 14, right: 14 },
   });
+
+  // ===== CALIBRATION QUALITY NARRATIVE =====
+  if (profile) {
+    doc.addPage();
+    let cy = 20;
+    cy = sectionHeader(doc, "Calibration Quality Narrative", cy, C.primary);
+    const q = profile.quality;
+    const narr = interpretCalibration(q.snrDb, q.driftMvS, q.alignmentPct, q.confidence);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...C.text);
+    doc.text(narr.headline, 14, cy);
+    cy += 6;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    const sumLines = doc.splitTextToSize(narr.summary, 182);
+    doc.text(sumLines, 14, cy);
+    cy += sumLines.length * 4 + 2;
+    autoTable(doc, {
+      startY: cy,
+      head: [["Metric", "Value", "Verdict", "Clinical interpretation", "Action"]],
+      body: narr.lines.map((l) => [l.metric, l.value, l.verdict.toUpperCase(), l.plain, l.action]),
+      theme: "grid",
+      headStyles: { fillColor: C.primary, textColor: 255, fontSize: 9 },
+      bodyStyles: { fontSize: 8, textColor: C.text, valign: "top" },
+      columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 22 }, 2: { cellWidth: 22 }, 3: { cellWidth: 70 }, 4: { cellWidth: 46 } },
+      margin: { left: 14, right: 14 },
+    });
+    let ry = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 6;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text("Recommendations", 14, ry);
+    ry += 5;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    narr.recommendations.forEach((r) => {
+      const ls = doc.splitTextToSize("• " + r, 182);
+      doc.text(ls, 14, ry);
+      ry += ls.length * 4 + 1;
+    });
+
+    // ===== SICKNESS SCREENING =====
+    if (ry > 230) { doc.addPage(); ry = 20; }
+    ry += 4;
+    ry = sectionHeader(doc, "Sickness Screening — Brain · Heart · DNA", ry, C.primary);
+    const sick = screenSickness(profile);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text(`Triage band: ${sick.triageBand}    Composite risk: ${sick.composite}/100`, 14, ry);
+    ry += 5;
+    autoTable(doc, {
+      startY: ry,
+      head: [["System", "Finding", "Severity", "Evidence", "Why it matters", "Recommendation", "ICD-10"]],
+      body: sick.findings.map((x) => [x.system, x.condition, x.severity.toUpperCase(), x.evidence, x.explanation, x.recommendation, x.icd10 ?? "—"]),
+      theme: "grid",
+      headStyles: { fillColor: C.primary, textColor: 255, fontSize: 8 },
+      bodyStyles: { fontSize: 7.5, textColor: C.text, valign: "top" },
+      columnStyles: { 0: { cellWidth: 18 }, 1: { cellWidth: 30 }, 2: { cellWidth: 16 }, 3: { cellWidth: 30 }, 4: { cellWidth: 46 }, 5: { cellWidth: 46 }, 6: { cellWidth: 16 } },
+      margin: { left: 14, right: 14 },
+    });
+    ry = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 4;
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(7.5);
+    doc.setTextColor(120, 120, 130);
+    const dis = doc.splitTextToSize(sick.disclaimer, 182);
+    doc.text(dis, 14, ry);
+    doc.setTextColor(...C.text);
+  }
 
   // ===== AI CLINICAL INTERPRETATION (if available) =====
   if (ai) {
