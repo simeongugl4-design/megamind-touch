@@ -1,0 +1,130 @@
+import { CheckCircle2, AlertTriangle, AlertCircle, ShieldAlert, Activity, Stethoscope } from "lucide-react";
+import type { BiometricProfile } from "@/lib/biometricProfile";
+import { interpretCalibration, screenSickness, type MetricVerdict, type SicknessSeverity } from "@/lib/calibrationNarrative";
+
+const verdictStyle: Record<MetricVerdict, { color: string; bg: string; border: string; Icon: typeof CheckCircle2; label: string }> = {
+  excellent: { color: "text-emerald-300", bg: "bg-emerald-400/10", border: "border-emerald-400/40", Icon: CheckCircle2, label: "Excellent" },
+  good:      { color: "text-primary",     bg: "bg-primary/10",     border: "border-primary/40",     Icon: CheckCircle2, label: "Good" },
+  marginal:  { color: "text-amber-300",   bg: "bg-amber-400/10",   border: "border-amber-400/40",   Icon: AlertTriangle, label: "Marginal" },
+  poor:      { color: "text-destructive", bg: "bg-destructive/10", border: "border-destructive/40", Icon: AlertCircle, label: "Sub-clinical" },
+};
+
+const sevStyle: Record<SicknessSeverity, { color: string; bg: string; label: string }> = {
+  normal:   { color: "text-emerald-300", bg: "bg-emerald-400/10", label: "Normal" },
+  watch:    { color: "text-primary",     bg: "bg-primary/10",     label: "Watch" },
+  elevated: { color: "text-amber-300",   bg: "bg-amber-400/10",   label: "Elevated" },
+  critical: { color: "text-destructive", bg: "bg-destructive/10", label: "Critical" },
+};
+
+const CalibrationNarrative = ({
+  visible,
+  profile,
+}: {
+  visible: boolean;
+  profile: BiometricProfile | null;
+}) => {
+  if (!visible || !profile) return null;
+  const q = profile.quality;
+  const narrative = interpretCalibration(q.snrDb, q.driftMvS, q.alignmentPct, q.confidence);
+  const sickness = screenSickness(profile);
+  const top = verdictStyle[narrative.overallVerdict];
+  const TopIcon = top.Icon;
+
+  const triageColor =
+    sickness.triageBand === "Urgent consult" ? "text-destructive border-destructive/50 bg-destructive/10"
+    : sickness.triageBand === "Same-week consult" ? "text-amber-300 border-amber-400/50 bg-amber-400/10"
+    : sickness.triageBand === "Routine follow-up" ? "text-primary border-primary/40 bg-primary/10"
+    : "text-emerald-300 border-emerald-400/40 bg-emerald-400/10";
+
+  return (
+    <section className="px-4 sm:px-6 lg:px-12 pb-8">
+      <div className="max-w-7xl mx-auto rounded-xl border border-border bg-card/40 backdrop-blur-sm overflow-hidden">
+        {/* Calibration narrative */}
+        <div className="p-5 border-b border-border/60">
+          <div className="flex items-center gap-3 mb-4">
+            <div className={`w-9 h-9 rounded-lg border ${top.border} ${top.bg} flex items-center justify-center`}>
+              <TopIcon className={`w-4 h-4 ${top.color}`} />
+            </div>
+            <div>
+              <h3 className="font-orbitron text-sm font-bold tracking-wider uppercase">
+                Calibration Quality Narrative
+              </h3>
+              <p className={`text-[11px] ${top.color}`}>{narrative.headline}</p>
+            </div>
+          </div>
+          <p className="font-mono text-[11px] text-muted-foreground mb-4 leading-relaxed">
+            {narrative.summary}
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+            {narrative.lines.map((l) => {
+              const s = verdictStyle[l.verdict];
+              const Icon = s.Icon;
+              return (
+                <div key={l.metric} className={`rounded-lg border ${s.border} ${s.bg} p-3`}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-orbitron text-[10px] tracking-wider uppercase text-foreground flex items-center gap-1.5">
+                      <Icon className={`w-3 h-3 ${s.color}`} /> {l.metric}
+                    </span>
+                    <span className={`font-mono text-[10px] tabular-nums ${s.color}`}>
+                      {l.value} · {s.label}
+                    </span>
+                  </div>
+                  <p className="font-mono text-[10px] text-foreground/85 leading-relaxed mb-1">{l.plain}</p>
+                  <p className="font-mono text-[10px] text-muted-foreground italic">▶ {l.action}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Sickness screening */}
+        <div className="p-5">
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <Stethoscope className="w-4 h-4 text-primary" />
+              <h3 className="font-orbitron text-sm font-bold tracking-wider uppercase">
+                Sickness Screening · Brain · Heart · DNA
+              </h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`font-orbitron text-[10px] tracking-wider uppercase px-2.5 py-1 rounded-md border ${triageColor}`}>
+                <ShieldAlert className="inline w-3 h-3 mr-1" />
+                Triage: {sickness.triageBand}
+              </span>
+              <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
+                Composite risk {sickness.composite}/100
+              </span>
+            </div>
+          </div>
+          <ul className="space-y-2">
+            {sickness.findings.map((x, i) => {
+              const s = sevStyle[x.severity];
+              return (
+                <li key={i} className={`rounded-lg border border-border ${s.bg} p-3`}>
+                  <div className="flex items-center justify-between flex-wrap gap-1 mb-1">
+                    <span className="font-orbitron text-[10px] tracking-wider uppercase text-foreground flex items-center gap-1.5">
+                      <Activity className={`w-3 h-3 ${s.color}`} />
+                      {x.system} · {x.condition}
+                      {x.icd10 && (
+                        <span className="ml-1 font-mono text-[9px] text-muted-foreground">[{x.icd10}]</span>
+                      )}
+                    </span>
+                    <span className={`font-mono text-[9px] uppercase ${s.color}`}>{s.label}</span>
+                  </div>
+                  <p className="font-mono text-[10px] text-muted-foreground mb-0.5">▸ {x.evidence}</p>
+                  <p className="font-mono text-[10px] text-foreground/85 mb-0.5 leading-relaxed">{x.explanation}</p>
+                  <p className="font-mono text-[10px] text-primary/90 italic">▶ {x.recommendation}</p>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-3 font-mono text-[9px] text-muted-foreground italic leading-relaxed border-t border-border/50 pt-2">
+            {sickness.disclaimer}
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default CalibrationNarrative;
