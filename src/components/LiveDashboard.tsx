@@ -76,7 +76,7 @@ const LiveDashboard = ({
         t: 5.8,
         sev: ridge > 23 ? "info" : "warning",
         modality: "eeg",
-        msg: `Cortical baseline · α dominance ${(profile?.neural.alpha ?? 10).toFixed(1)} Hz`,
+        msg: `Cortical baseline · α band ${(profile?.neural.bands.alpha ?? 18).toFixed(1)} µV`,
         detail: `Posterior alpha rhythm reconstructed from microvascular pulsation envelope. Ridge density ${ridge.toFixed(1)} ridges/mm gives ${ridge > 23 ? "excellent" : "acceptable"} spatial sampling for the surrogate EEG model.`,
       },
       {
