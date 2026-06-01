@@ -6,6 +6,7 @@ import type { PatientInfo } from "./PatientIntakeForm";
 import type { ClinicalReport } from "./AIInsightsPanel";
 import type { BiometricProfile } from "@/lib/biometricProfile";
 import { interpretCalibration, screenSickness } from "@/lib/calibrationNarrative";
+import { buildMedicationPlan, MEDICATION_DISCLAIMER } from "@/lib/medicationAdvisor";
 
 const cognitiveMetrics = [
   ["IQ Estimate (WAIS-equiv.)", "142", "85-145", "High"],
