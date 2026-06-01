@@ -585,6 +585,74 @@ function buildPDF(
     const dis = doc.splitTextToSize(sick.disclaimer, 182);
     doc.text(dis, 14, ry);
     doc.setTextColor(...C.text);
+
+    // ===== EVIDENCE-BASED MEDICATION ADVISOR =====
+    const plans = buildMedicationPlan(sick.findings);
+    if (plans.length > 0) {
+      doc.addPage();
+      let my = 20;
+      my = sectionHeader(doc, "Evidence-Based Medication Advisor", my, C.primary);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(...C.text);
+      const intro = doc.splitTextToSize(
+        "Pharmacological options sourced from current major clinical guidelines (AHA/ACC, ESC, NICE, ADA, WHO, AASM, APA, FDA labels). Decision-support only — a licensed clinician must confirm indication, dose, contraindications and interactions before prescribing.",
+        182,
+      );
+      doc.text(intro, 14, my);
+      my += intro.length * 3.6 + 2;
+
+      const body: string[][] = [];
+      plans.forEach((p) => {
+        body.push([
+          `${p.finding.system} — ${p.finding.condition}`,
+          "LIFESTYLE",
+          "—",
+          p.lifestyle,
+          "—",
+        ]);
+        p.options.forEach((o) => {
+          body.push([
+            `${o.line.toUpperCase()}`,
+            o.drugClass,
+            o.example,
+            `${o.mechanism}  •  ${o.rationale}  •  Caution: ${o.cautions}`,
+            `${o.source.name} — ${o.source.ref}${o.source.url ? "\n" + o.source.url : ""}`,
+          ]);
+        });
+        body.push([
+          "RED FLAGS",
+          "Escalate",
+          "—",
+          p.redFlags,
+          "—",
+        ]);
+      });
+
+      autoTable(doc, {
+        startY: my,
+        head: [["Condition / Line", "Drug class", "Example regimen", "Rationale & caution", "Guideline source"]],
+        body,
+        theme: "grid",
+        headStyles: { fillColor: C.primary, textColor: 255, fontSize: 8 },
+        bodyStyles: { fontSize: 7, textColor: C.text, valign: "top" },
+        columnStyles: {
+          0: { cellWidth: 34, fontStyle: "bold" },
+          1: { cellWidth: 28 },
+          2: { cellWidth: 32 },
+          3: { cellWidth: 60 },
+          4: { cellWidth: 28, textColor: [60, 90, 160] },
+        },
+        margin: { left: 14, right: 14 },
+      });
+      my = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 4;
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(7.5);
+      doc.setTextColor(120, 120, 130);
+      const md = doc.splitTextToSize(MEDICATION_DISCLAIMER, 182);
+      doc.text(md, 14, my);
+      doc.setTextColor(...C.text);
+    }
   }
 
   // ===== AI CLINICAL INTERPRETATION (if available) =====
