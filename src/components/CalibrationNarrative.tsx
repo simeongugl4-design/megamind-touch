@@ -1,6 +1,7 @@
-import { CheckCircle2, AlertTriangle, AlertCircle, ShieldAlert, Activity, Stethoscope } from "lucide-react";
+import { CheckCircle2, AlertTriangle, AlertCircle, ShieldAlert, Activity, Stethoscope, Pill, ExternalLink } from "lucide-react";
 import type { BiometricProfile } from "@/lib/biometricProfile";
 import { interpretCalibration, screenSickness, type MetricVerdict, type SicknessSeverity } from "@/lib/calibrationNarrative";
+import { buildMedicationPlan, MEDICATION_DISCLAIMER } from "@/lib/medicationAdvisor";
 
 const verdictStyle: Record<MetricVerdict, { color: string; bg: string; border: string; Icon: typeof CheckCircle2; label: string }> = {
   excellent: { color: "text-emerald-300", bg: "bg-emerald-400/10", border: "border-emerald-400/40", Icon: CheckCircle2, label: "Excellent" },
@@ -122,6 +123,85 @@ const CalibrationNarrative = ({
             {sickness.disclaimer}
           </p>
         </div>
+
+        {/* Evidence-based medication advisor */}
+        {(() => {
+          const plans = buildMedicationPlan(sickness.findings);
+          if (plans.length === 0) return null;
+          return (
+            <div className="p-5 border-t border-border/60">
+              <div className="flex items-center gap-2 mb-3">
+                <Pill className="w-4 h-4 text-primary" />
+                <h3 className="font-orbitron text-sm font-bold tracking-wider uppercase">
+                  Evidence-Based Medication Advisor
+                </h3>
+              </div>
+              <div className="space-y-4">
+                {plans.map((p, i) => (
+                  <div key={i} className="rounded-lg border border-border bg-background/40 p-3">
+                    <div className="flex items-center justify-between flex-wrap gap-1 mb-2">
+                      <span className="font-orbitron text-[11px] tracking-wider uppercase text-foreground">
+                        {p.finding.system} · {p.finding.condition}
+                      </span>
+                      <span className="font-mono text-[9px] uppercase text-muted-foreground">
+                        {p.finding.severity}
+                      </span>
+                    </div>
+                    <p className="font-mono text-[10px] text-emerald-300 mb-2">
+                      ▶ Lifestyle: <span className="text-foreground/90">{p.lifestyle}</span>
+                    </p>
+                    <div className="space-y-2">
+                      {p.options.map((o, j) => (
+                        <div key={j} className="rounded-md border border-border/60 bg-card/40 p-2.5">
+                          <div className="flex items-center justify-between flex-wrap gap-1">
+                            <span className="font-orbitron text-[10px] tracking-wider uppercase text-primary">
+                              {o.drugClass}
+                            </span>
+                            <span className="font-mono text-[9px] uppercase text-amber-300">{o.line}</span>
+                          </div>
+                          <p className="font-mono text-[10px] text-foreground mt-0.5">
+                            <span className="text-primary/80">Rx:</span> {o.example}
+                          </p>
+                          <p className="font-mono text-[10px] text-foreground/80 mt-0.5">
+                            <span className="text-muted-foreground">MoA:</span> {o.mechanism}
+                          </p>
+                          <p className="font-mono text-[10px] text-foreground/80 mt-0.5">
+                            <span className="text-muted-foreground">Why:</span> {o.rationale}
+                          </p>
+                          <p className="font-mono text-[10px] text-amber-300/90 mt-0.5">
+                            ⚠ {o.cautions}
+                          </p>
+                          <p className="font-mono text-[10px] mt-1">
+                            <span className="text-muted-foreground">Source:</span>{" "}
+                            {o.source.url ? (
+                              <a
+                                href={o.source.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-primary hover:underline inline-flex items-center gap-1"
+                              >
+                                {o.source.name} <ExternalLink className="w-2.5 h-2.5" />
+                              </a>
+                            ) : (
+                              <span className="text-primary">{o.source.name}</span>
+                            )}
+                            <span className="text-muted-foreground"> — {o.source.ref}</span>
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="font-mono text-[10px] text-destructive mt-2">
+                      🚨 Red flags: {p.redFlags}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3 font-mono text-[9px] text-muted-foreground italic leading-relaxed border-t border-border/50 pt-2">
+                {MEDICATION_DISCLAIMER}
+              </p>
+            </div>
+          );
+        })()}
       </div>
     </section>
   );
