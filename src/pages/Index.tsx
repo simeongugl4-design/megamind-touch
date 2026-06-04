@@ -161,7 +161,7 @@ const Index = () => {
         <RealTimeDiseaseMonitor active={isScanning || scanComplete} profile={profile} />
 
         {/* Calibration narrative + sickness screening */}
-        <CalibrationNarrative visible={scanComplete} profile={profile} />
+        <CalibrationNarrative visible={scanComplete} profile={profile} patient={patient} />
 
         {/* Brain Analysis Results */}
         <BrainAnalysisResults visible={scanComplete} />

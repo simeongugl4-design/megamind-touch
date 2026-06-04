@@ -1,7 +1,9 @@
-import { CheckCircle2, AlertTriangle, AlertCircle, ShieldAlert, Activity, Stethoscope, Pill, ExternalLink } from "lucide-react";
+import { CheckCircle2, AlertTriangle, AlertCircle, ShieldAlert, Activity, Stethoscope, Pill, ExternalLink, ShieldX, ShieldCheck } from "lucide-react";
 import type { BiometricProfile } from "@/lib/biometricProfile";
 import { interpretCalibration, screenSickness, type MetricVerdict, type SicknessSeverity } from "@/lib/calibrationNarrative";
 import { buildMedicationPlan, MEDICATION_DISCLAIMER } from "@/lib/medicationAdvisor";
+import { reviewPlan, SAFETY_DISCLAIMER, type SafetySeverity } from "@/lib/medicationSafety";
+import type { PatientInfo } from "@/components/PatientIntakeForm";
 
 const verdictStyle: Record<MetricVerdict, { color: string; bg: string; border: string; Icon: typeof CheckCircle2; label: string }> = {
   excellent: { color: "text-emerald-300", bg: "bg-emerald-400/10", border: "border-emerald-400/40", Icon: CheckCircle2, label: "Excellent" },
@@ -20,9 +22,11 @@ const sevStyle: Record<SicknessSeverity, { color: string; bg: string; label: str
 const CalibrationNarrative = ({
   visible,
   profile,
+  patient,
 }: {
   visible: boolean;
   profile: BiometricProfile | null;
+  patient?: PatientInfo | null;
 }) => {
   if (!visible || !profile) return null;
   const q = profile.quality;
@@ -36,6 +40,13 @@ const CalibrationNarrative = ({
     : sickness.triageBand === "Same-week consult" ? "text-amber-300 border-amber-400/50 bg-amber-400/10"
     : sickness.triageBand === "Routine follow-up" ? "text-primary border-primary/40 bg-primary/10"
     : "text-emerald-300 border-emerald-400/40 bg-emerald-400/10";
+
+  const safetyStyle: Record<SafetySeverity, { color: string; bg: string; border: string; label: string }> = {
+    info:            { color: "text-primary",     bg: "bg-primary/10",     border: "border-primary/40",     label: "Info" },
+    caution:         { color: "text-amber-300",   bg: "bg-amber-400/10",   border: "border-amber-400/40",   label: "Caution" },
+    major:           { color: "text-orange-300",  bg: "bg-orange-400/10",  border: "border-orange-400/40",  label: "Major" },
+    contraindicated: { color: "text-destructive", bg: "bg-destructive/10", border: "border-destructive/50", label: "Contraindicated" },
+  };
 
   return (
     <section className="px-4 sm:px-6 lg:px-12 pb-8">
@@ -193,11 +204,90 @@ const CalibrationNarrative = ({
                     <p className="font-mono text-[10px] text-destructive mt-2">
                       🚨 Red flags: {p.redFlags}
                     </p>
+                    {(() => {
+                      const report = reviewPlan(p, patient ?? null);
+                      const hasAny = report.drugs.some((d) => d.alerts.length) || report.interactions.length > 0;
+                      const headerStyle = safetyStyle[report.worst];
+                      return (
+                        <div className={`mt-3 rounded-md border ${headerStyle.border} ${headerStyle.bg} p-2.5`}>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className={`font-orbitron text-[10px] tracking-wider uppercase ${headerStyle.color} flex items-center gap-1.5`}>
+                              {hasAny ? <ShieldX className="w-3 h-3" /> : <ShieldCheck className="w-3 h-3" />}
+                              Medication Safety Check
+                            </span>
+                            <span className={`font-mono text-[9px] uppercase ${headerStyle.color}`}>
+                              {hasAny ? `${headerStyle.label} · ${report.drugs.reduce((n, d) => n + d.alerts.length, 0) + report.interactions.length} alert(s)` : "Clear"}
+                            </span>
+                          </div>
+                          {!hasAny && (
+                            <p className="font-mono text-[10px] text-foreground/80">
+                              No contraindications or drug–drug interactions detected for the recommended options given the patient's recorded profile. Clinician must still reconcile full medication list and labs.
+                            </p>
+                          )}
+                          {report.drugs.map((d, k) =>
+                            d.alerts.length === 0 ? null : (
+                              <div key={`d${k}`} className="mt-1.5">
+                                <p className="font-mono text-[10px] text-foreground/90">
+                                  <span className="text-primary">{d.drugClass}</span>
+                                  {d.blocked && (
+                                    <span className="ml-1 text-[9px] uppercase text-destructive">[blocked]</span>
+                                  )}
+                                </p>
+                                <ul className="mt-1 space-y-1">
+                                  {d.alerts.map((a, m) => {
+                                    const s = safetyStyle[a.severity];
+                                    return (
+                                      <li key={m} className={`rounded border ${s.border} ${s.bg} p-1.5`}>
+                                        <div className="flex items-center justify-between gap-2">
+                                          <span className={`font-mono text-[10px] ${s.color}`}>
+                                            ⚠ {a.kind} · {a.title}
+                                          </span>
+                                          <span className={`font-mono text-[9px] uppercase ${s.color}`}>{s.label}</span>
+                                        </div>
+                                        <p className="font-mono text-[10px] text-foreground/85 mt-0.5">{a.detail}</p>
+                                        <p className="font-mono text-[10px] text-primary/90 mt-0.5">▶ {a.action}</p>
+                                        <p className="font-mono text-[9px] text-muted-foreground mt-0.5 italic">Source: {a.source}</p>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              </div>
+                            ),
+                          )}
+                          {report.interactions.length > 0 && (
+                            <div className="mt-2">
+                              <p className="font-orbitron text-[9px] tracking-wider uppercase text-foreground/80">
+                                Cross-drug interactions in this regimen
+                              </p>
+                              <ul className="mt-1 space-y-1">
+                                {report.interactions.map((a, m) => {
+                                  const s = safetyStyle[a.severity];
+                                  return (
+                                    <li key={m} className={`rounded border ${s.border} ${s.bg} p-1.5`}>
+                                      <div className="flex items-center justify-between gap-2">
+                                        <span className={`font-mono text-[10px] ${s.color}`}>↔ {a.title}</span>
+                                        <span className={`font-mono text-[9px] uppercase ${s.color}`}>{s.label}</span>
+                                      </div>
+                                      <p className="font-mono text-[10px] text-foreground/85 mt-0.5">{a.detail}</p>
+                                      <p className="font-mono text-[10px] text-primary/90 mt-0.5">▶ {a.action}</p>
+                                      <p className="font-mono text-[9px] text-muted-foreground mt-0.5 italic">Source: {a.source}</p>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 ))}
               </div>
               <p className="mt-3 font-mono text-[9px] text-muted-foreground italic leading-relaxed border-t border-border/50 pt-2">
                 {MEDICATION_DISCLAIMER}
+              </p>
+              <p className="mt-2 font-mono text-[9px] text-muted-foreground italic leading-relaxed">
+                {SAFETY_DISCLAIMER}
               </p>
             </div>
           );
