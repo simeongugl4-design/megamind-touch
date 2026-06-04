@@ -53,6 +53,21 @@ export type PlanSafetyReport = {
   worst: SafetySeverity;
 };
 
+/** Optional clinical context the caller can supply on top of PatientInfo. */
+export type SafetyContext = {
+  conditions?: string[];
+  allergies?: string;
+  medications?: string;
+};
+
+function ageFromDob(dob?: string): number {
+  if (!dob) return 0;
+  const d = new Date(dob);
+  if (isNaN(d.getTime())) return 0;
+  const diff = Date.now() - d.getTime();
+  return Math.floor(diff / (365.25 * 24 * 3600 * 1000));
+}
+
 /* ------------------------------------------------------------------ */
 /*  Drug fingerprinting                                                */
 /* ------------------------------------------------------------------ */
@@ -95,13 +110,14 @@ function checkContraindications(
   tag: string,
   rec: MedicationRec,
   patient: PatientInfo | null,
+  ctx: SafetyContext,
 ): SafetyAlert[] {
   const alerts: SafetyAlert[] = [];
-  const age = patient?.age ?? 0;
+  const age = ageFromDob(patient?.dob);
   const sex = (patient?.sex ?? "").toLowerCase();
-  const conds = (patient?.conditions ?? []).map((c) => c.toLowerCase());
-  const allergies = (patient?.allergies ?? "").toLowerCase();
-  const meds = (patient?.medications ?? "").toLowerCase();
+  const conds = (ctx.conditions ?? []).map((c) => c.toLowerCase());
+  const allergies = (ctx.allergies ?? "").toLowerCase();
+  const meds = (ctx.medications ?? "").toLowerCase();
 
   const has = (re: RegExp) => conds.some((c) => re.test(c)) || re.test(meds);
   const allergic = (re: RegExp) => re.test(allergies);
@@ -557,10 +573,14 @@ const sevRank: Record<SafetySeverity, number> = {
   info: 0, caution: 1, major: 2, contraindicated: 3,
 };
 
-export function reviewPlan(plan: MedicationPlan, patient: PatientInfo | null): PlanSafetyReport {
+export function reviewPlan(
+  plan: MedicationPlan,
+  patient: PatientInfo | null,
+  ctx: SafetyContext = {},
+): PlanSafetyReport {
   const tagged = plan.options.map((rec) => ({ rec, tags: tagDrug(rec) }));
   const drugs: DrugSafetyReport[] = tagged.map(({ rec, tags }) => {
-    const alerts = tags.flatMap((t) => checkContraindications(t, rec, patient));
+    const alerts = tags.flatMap((t) => checkContraindications(t, rec, patient, ctx));
     const blocked = alerts.some((a) => a.severity === "contraindicated");
     return { drugClass: rec.drugClass, example: rec.example, alerts, blocked };
   });
@@ -573,8 +593,12 @@ export function reviewPlan(plan: MedicationPlan, patient: PatientInfo | null): P
   return { condition: plan.finding.condition, drugs, interactions, worst };
 }
 
-export function reviewPlans(plans: MedicationPlan[], patient: PatientInfo | null): PlanSafetyReport[] {
-  return plans.map((p) => reviewPlan(p, patient));
+export function reviewPlans(
+  plans: MedicationPlan[],
+  patient: PatientInfo | null,
+  ctx: SafetyContext = {},
+): PlanSafetyReport[] {
+  return plans.map((p) => reviewPlan(p, patient, ctx));
 }
 
 export const SAFETY_DISCLAIMER =
