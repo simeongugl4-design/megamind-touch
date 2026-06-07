@@ -22,6 +22,7 @@ import RealTimeDiseaseMonitor from "@/components/RealTimeDiseaseMonitor";
 import { deriveProfile, type FingerprintCapture } from "@/lib/biometricProfile";
 import { Shield, Zap, Layers, Dna, Heart, Brain } from "lucide-react";
 import { Component as AILoader } from "@/components/ui/ai-loader";
+import { useSplashScreen } from "@/hooks/useSplashScreen";
 
 const Index = () => {
   const [booting, setBooting] = useState(true);
