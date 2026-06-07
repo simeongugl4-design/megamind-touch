@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import megamindLogo from "@/assets/megamind-logo.png";
 import neuralBg from "@/assets/neural-bg.jpg";
 import FingerprintScanner from "@/components/FingerprintScanner";
@@ -21,8 +21,14 @@ import CalibrationNarrative from "@/components/CalibrationNarrative";
 import RealTimeDiseaseMonitor from "@/components/RealTimeDiseaseMonitor";
 import { deriveProfile, type FingerprintCapture } from "@/lib/biometricProfile";
 import { Shield, Zap, Layers, Dna, Heart, Brain } from "lucide-react";
+import { Component as AILoader } from "@/components/ui/ai-loader";
 
 const Index = () => {
+  const [booting, setBooting] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setBooting(false), 2800);
+    return () => clearTimeout(t);
+  }, []);
   const [isScanning, setIsScanning] = useState(false);
   const [scanComplete, setScanComplete] = useState(false);
   const [patient, setPatient] = useState<PatientInfo | null>(null);
@@ -32,6 +38,29 @@ const Index = () => {
     () => (patient ? deriveProfile(patient, capture ?? undefined) : null),
     [patient, capture],
   );
+
+  if (booting) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-10 relative overflow-hidden">
+        <div className="fixed inset-0 z-0">
+          <img src={neuralBg} alt="" className="w-full h-full object-cover opacity-20" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background" />
+        </div>
+        <div className="relative z-10 flex flex-col items-center gap-8">
+          <div className="flex items-center gap-3">
+            <img src={megamindLogo} alt="MegaMind" width={48} height={48} />
+            <span className="font-orbitron text-xl font-bold tracking-widest">
+              MEGA<span className="text-primary text-glow-cyan">MIND</span>
+            </span>
+          </div>
+          <AILoader size={200} text="Initializing MediBAL" />
+          <p className="font-mono text-xs tracking-widest uppercase text-muted-foreground">
+            Calibrating biosensors · Loading clinical models
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
