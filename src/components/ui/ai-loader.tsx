@@ -3,29 +3,81 @@ import * as React from "react";
 interface LoaderProps {
   size?: number;
   text?: string;
+  /** Optional progress 0–100 to render a radial ring */
+  progress?: number;
+  /** Optional status message beneath the loader */
+  status?: string;
 }
 
-export const Component: React.FC<LoaderProps> = ({ size = 180, text = "Generating" }) => {
+export const Component: React.FC<LoaderProps> = ({
+  size = 180,
+  text = "Generating",
+  progress,
+  status,
+}) => {
   const letters = text.split("");
+  const radius = size / 2 - 8;
+  const circumference = 2 * Math.PI * radius;
+  const offset =
+    progress !== undefined
+      ? circumference - (progress / 100) * circumference
+      : circumference;
 
   return (
-    <div className="flex flex-col items-center justify-center gap-8">
+    <div className="flex flex-col items-center justify-center gap-6">
       <div
         className="relative flex items-center justify-center rounded-full animate-loaderCircle"
         style={{ width: size, height: size }}
       >
-        <div className="flex gap-1 font-orbitron tracking-widest text-foreground text-lg">
+        {/* Progress ring */}
+        {progress !== undefined && (
+          <svg
+            className="absolute inset-0 -rotate-90"
+            width={size}
+            height={size}
+            viewBox={`0 0 ${size} ${size}`}
+          >
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              fill="none"
+              stroke="hsl(var(--primary) / 0.15)"
+              strokeWidth={4}
+            />
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              fill="none"
+              stroke="hsl(var(--primary))"
+              strokeWidth={4}
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={offset}
+              style={{ transition: "stroke-dashoffset 0.2s linear" }}
+            />
+          </svg>
+        )}
+
+        <div className="flex gap-1 font-orbitron tracking-widest text-foreground text-lg z-10">
           {letters.map((letter, index) => (
             <span
               key={index}
               className="animate-loaderLetter inline-block"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              {letter}
+              {letter === " " ? "\u00A0" : letter}
             </span>
           ))}
         </div>
       </div>
+
+      {status && (
+        <p className="font-mono text-xs tracking-widest uppercase text-muted-foreground text-center max-w-xs">
+          {status}
+        </p>
+      )}
 
       <style>{`
         @keyframes loaderCircle {

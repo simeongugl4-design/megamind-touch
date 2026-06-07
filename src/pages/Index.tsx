@@ -22,13 +22,24 @@ import RealTimeDiseaseMonitor from "@/components/RealTimeDiseaseMonitor";
 import { deriveProfile, type FingerprintCapture } from "@/lib/biometricProfile";
 import { Shield, Zap, Layers, Dna, Heart, Brain } from "lucide-react";
 import { Component as AILoader } from "@/components/ui/ai-loader";
+import { useSplashScreen } from "@/hooks/useSplashScreen";
+
+/* ------------------------------------------------------------------ */
+/*  Splash-screen timing config                                       */
+/*  – minDuration : minimum time loader stays visible (ms)            */
+/*  – maxDuration : hard ceiling before auto-route (ms)               */
+/* ------------------------------------------------------------------ */
+const SPLASH_CONFIG = {
+  minDuration: 3000,   // 3 s  (user-configurable: 2000–5000)
+  maxDuration: 5000,   // 5 s  safety ceiling
+} as const;
 
 const Index = () => {
-  const [booting, setBooting] = useState(true);
-  useEffect(() => {
-    const t = setTimeout(() => setBooting(false), 2800);
-    return () => clearTimeout(t);
-  }, []);
+  const { isVisible: showSplash, progress, markReady } = useSplashScreen({
+    minDuration: SPLASH_CONFIG.minDuration,
+    maxDuration: SPLASH_CONFIG.maxDuration,
+  });
+
   const [isScanning, setIsScanning] = useState(false);
   const [scanComplete, setScanComplete] = useState(false);
   const [patient, setPatient] = useState<PatientInfo | null>(null);
@@ -39,7 +50,18 @@ const Index = () => {
     [patient, capture],
   );
 
-  if (booting) {
+  /* Early-ready: finish splash once web-fonts (or window load) are ready */
+  useEffect(() => {
+    const onReady = () => markReady();
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(onReady).catch(onReady);
+    } else {
+      window.addEventListener("load", onReady);
+      return () => window.removeEventListener("load", onReady);
+    }
+  }, [markReady]);
+
+  if (showSplash) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-10 relative overflow-hidden">
         <div className="fixed inset-0 z-0">
@@ -53,10 +75,12 @@ const Index = () => {
               MEGA<span className="text-primary text-glow-cyan">MIND</span>
             </span>
           </div>
-          <AILoader size={200} text="Initializing MediBAL" />
-          <p className="font-mono text-xs tracking-widest uppercase text-muted-foreground">
-            Calibrating biosensors · Loading clinical models
-          </p>
+          <AILoader
+            size={200}
+            text="Initializing MediBAL"
+            progress={progress}
+            status={`Calibrating biosensors · Loading clinical models · ${Math.round(progress)}%`}
+          />
         </div>
       </div>
     );
