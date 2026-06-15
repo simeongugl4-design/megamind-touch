@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Activity, Brain, Dna, Heart, ShieldCheck, Sparkles, Stethoscope, Waves, ArrowRight, CheckCircle2, FileCheck2, Lock, Cpu } from "lucide-react";
+import { GlassButton } from "@/components/ui/apple-tahoe-liquid-glass-button";
 import megamindLogo from "@/assets/megamind-logo.png";
 import neuralBg from "@/assets/neural-bg.jpg";
 import brainScan from "@/assets/brain-scan.png";
@@ -35,11 +36,10 @@ const Landing = () => {
             <a href="#trust" className="hover:text-primary transition-colors">Trust</a>
             <a href="#workflow" className="hover:text-primary transition-colors">Workflow</a>
           </div>
-          <Link
-            to="/scan"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground font-orbitron text-xs tracking-widest hover:bg-primary/90 transition-colors"
-          >
-            LAUNCH SCAN <ArrowRight className="w-3.5 h-3.5" />
+          <Link to="/scan">
+            <GlassButton size="sm" className="font-orbitron tracking-widest text-xs">
+              LAUNCH SCAN <ArrowRight className="w-3.5 h-3.5" />
+            </GlassButton>
           </Link>
         </nav>
 
@@ -51,10 +51,16 @@ const Landing = () => {
                 <ShieldCheck className="w-3.5 h-3.5" /> Clinically Calibrated · ISO 13485 Aligned
               </div>
               <h1 className="font-orbitron text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.05] tracking-tight">
-                Medical-grade intelligence,
+                Clone your{" "}
+                <span className="text-primary text-glow-cyan">Brain</span>,{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400">DNA</span>{" "}
+                & <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-rose-400">Heart</span>
                 <br />
-                <span className="text-primary text-glow-cyan">at the touch of a fingertip.</span>
+                <span className="text-foreground/90">through a single touch.</span>
               </h1>
+              <p className="font-orbitron text-sm sm:text-base tracking-[0.25em] uppercase text-primary/90">
+                AI-Powered BioDigital Twin · Medical-Grade Intelligence
+              </p>
               <p className="text-base sm:text-lg text-muted-foreground leading-relaxed max-w-xl">
                 MediBAL Scan unifies cardiac, neural, and genomic biosignal analysis into a single
                 clinician-grade screening platform — delivering real-time disease detection,
@@ -62,17 +68,15 @@ const Landing = () => {
               </p>
 
               <div className="flex flex-wrap items-center gap-4 pt-2">
-                <Link
-                  to="/scan"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-md bg-primary text-primary-foreground font-orbitron text-sm tracking-widest hover:bg-primary/90 transition-all hover:box-glow-cyan"
-                >
-                  BEGIN SCAN <ArrowRight className="w-4 h-4" />
+                <Link to="/scan">
+                  <GlassButton size="lg" className="font-orbitron tracking-widest text-sm">
+                    BEGIN SCAN <ArrowRight className="w-4 h-4" />
+                  </GlassButton>
                 </Link>
-                <a
-                  href="#capabilities"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-md border border-border bg-card/40 backdrop-blur-sm font-orbitron text-sm tracking-widest hover:border-primary/50 hover:text-primary transition-colors"
-                >
-                  EXPLORE PLATFORM
+                <a href="#capabilities">
+                  <GlassButton size="lg" className="font-orbitron tracking-widest text-sm" glassColor="oklch(from var(--foreground) l c h / 4%)">
+                    EXPLORE PLATFORM
+                  </GlassButton>
                 </a>
               </div>
 
@@ -260,11 +264,10 @@ const Landing = () => {
               <p className="text-muted-foreground max-w-xl mx-auto">
                 Launch the MediBAL clinical console and capture a full biosignal screening in under two seconds.
               </p>
-              <Link
-                to="/scan"
-                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-md bg-primary text-primary-foreground font-orbitron text-sm tracking-widest hover:bg-primary/90 transition-all hover:box-glow-cyan"
-              >
-                OPEN CLINICAL CONSOLE <ArrowRight className="w-4 h-4" />
+              <Link to="/scan" className="inline-block">
+                <GlassButton size="lg" className="font-orbitron tracking-widest text-sm">
+                  OPEN CLINICAL CONSOLE <ArrowRight className="w-4 h-4" />
+                </GlassButton>
               </Link>
             </div>
           </div>
