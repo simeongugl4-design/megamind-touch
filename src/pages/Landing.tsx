@@ -12,28 +12,48 @@ import heartScan from "@/assets/heart-scan.png";
 import dnaScan from "@/assets/dna-scan.png";
 
 const Landing = () => {
+  // Deterministic particle field
+  const particles = Array.from({ length: 36 }).map((_, i) => ({
+    left: (i * 53) % 100,
+    delay: (i * 0.37) % 8,
+    dur: 8 + ((i * 1.7) % 10),
+    size: 1 + (i % 3),
+  }));
   return (
     <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
       {/* Futuristic ambient background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <img src={neuralBg} alt="" className="w-full h-full object-cover opacity-[0.18]" />
         <div className="absolute inset-0 bg-gradient-to-b from-background via-background/85 to-background" />
-        {/* Animated grid */}
+        {/* Animated cyber grid */}
         <div
-          className="absolute inset-0 opacity-[0.08]"
-          style={{
-            backgroundImage:
-              "linear-gradient(hsl(var(--primary)/0.6) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)/0.6) 1px, transparent 1px)",
-            backgroundSize: "56px 56px",
-            maskImage: "radial-gradient(ellipse at center, black 30%, transparent 80%)",
-          }}
+          className="absolute inset-0 bg-cyber-grid opacity-[0.18]"
+          style={{ maskImage: "radial-gradient(ellipse at center, black 30%, transparent 85%)", WebkitMaskImage: "radial-gradient(ellipse at center, black 30%, transparent 85%)" }}
         />
+        {/* Floating particles */}
+        <div className="absolute inset-0 overflow-hidden">
+          {particles.map((p, i) => (
+            <span
+              key={i}
+              className="absolute bottom-0 rounded-full bg-primary/70 animate-float-particle shadow-[0_0_8px_hsl(var(--primary))]"
+              style={{
+                left: `${p.left}%`,
+                width: p.size,
+                height: p.size,
+                animationDuration: `${p.dur}s`,
+                animationDelay: `${p.delay}s`,
+              }}
+            />
+          ))}
+        </div>
+        {/* HUD scanline sweep */}
+        <div className="absolute inset-x-0 h-24 bg-gradient-to-b from-transparent via-primary/10 to-transparent animate-hud-sweep" />
         {/* Drifting orbs */}
         <div className="absolute -top-40 -left-40 w-[42rem] h-[42rem] rounded-full bg-primary/10 blur-3xl animate-pulse-glow" />
         <div className="absolute -bottom-40 -right-40 w-[42rem] h-[42rem] rounded-full bg-secondary/10 blur-3xl animate-pulse-glow" />
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[28rem] h-[28rem] rounded-full bg-cyan-400/5 blur-3xl" />
-        {/* Vertical scan sweep */}
-        <div className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent animate-scan-line" />
+        {/* Vignette */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,hsl(var(--background))_100%)]" />
       </div>
 
       <div className="relative z-10">
@@ -76,7 +96,7 @@ const Landing = () => {
               </div>
               <h1 className="font-orbitron text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.05] tracking-tight">
                 Clone your{" "}
-                <span className="text-primary text-glow-cyan">Brain</span>,{" "}
+                <span className="text-gradient-neon animate-glitch">Brain</span>,{" "}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400">DNA</span>{" "}
                 & <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-rose-400">Heart</span>
                 <br />
@@ -132,7 +152,7 @@ const Landing = () => {
                   <span key={p} className={`absolute w-6 h-6 ${p} border-primary text-primary animate-corner-pulse rounded-sm`} />
                 ))}
               </div>
-              <div className="relative rounded-2xl border border-border/60 bg-card/40 backdrop-blur-xl p-6 box-glow-cyan overflow-hidden">
+              <div className="relative rounded-2xl border border-border/60 bg-card/40 backdrop-blur-xl p-6 box-glow-cyan overflow-hidden border-neon">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/10 pointer-events-none" />
                 <span className="absolute inset-y-0 -left-1/3 w-1/3 bg-gradient-to-r from-transparent via-primary/15 to-transparent animate-holo-shimmer pointer-events-none" />
                 <div className="grid grid-cols-3 gap-4 relative">

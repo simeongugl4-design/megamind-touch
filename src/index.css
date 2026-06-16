@@ -113,6 +113,82 @@
   from { transform: rotate(360deg); }
   to { transform: rotate(0deg); }
 }
+
+/* ---------- Futuristic FX ---------- */
+@keyframes grid-drift {
+  0%   { background-position: 0 0, 0 0; }
+  100% { background-position: 56px 56px, 56px 56px; }
+}
+.bg-cyber-grid {
+  background-image:
+    linear-gradient(hsl(var(--primary)/0.35) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--primary)/0.35) 1px, transparent 1px);
+  background-size: 56px 56px, 56px 56px;
+  animation: grid-drift 14s linear infinite;
+}
+
+@keyframes hud-sweep {
+  0%   { transform: translateY(-100%); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
+.animate-hud-sweep { animation: hud-sweep 6s linear infinite; }
+
+@keyframes float-particle {
+  0%   { transform: translateY(0) translateX(0); opacity: 0; }
+  10%  { opacity: 0.8; }
+  90%  { opacity: 0.8; }
+  100% { transform: translateY(-120vh) translateX(20px); opacity: 0; }
+}
+.animate-float-particle { animation: float-particle linear infinite; }
+
+@keyframes border-trace {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+.border-neon {
+  position: relative;
+  background-clip: padding-box;
+}
+.border-neon::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(90deg,
+    hsl(var(--primary)/0.0) 0%,
+    hsl(var(--primary)/0.9) 25%,
+    hsl(var(--secondary)/0.9) 50%,
+    hsl(var(--primary)/0.9) 75%,
+    hsl(var(--primary)/0.0) 100%);
+  background-size: 200% 100%;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  animation: border-trace 4s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes glitch-x {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-1px); }
+  40% { transform: translateX(1px); }
+  60% { transform: translateX(-0.5px); }
+}
+.animate-glitch { animation: glitch-x 3s ease-in-out infinite; }
+
+.text-gradient-neon {
+  background: linear-gradient(90deg, hsl(180 100% 60%), hsl(270 100% 75%), hsl(180 100% 60%));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+          background-clip: text;
+  color: transparent;
+  animation: border-trace 5s linear infinite;
+}
+
 @keyframes radar-sweep {
   0% { transform: rotate(0deg); opacity: 0.0; }
   10% { opacity: 0.9; }
